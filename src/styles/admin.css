@@ -1,0 +1,257 @@
+.admin-shell {
+  min-height: 100vh;
+  background: var(--color-bg-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--color-paper);
+  border-bottom: 1px solid var(--color-line-soft);
+  flex-wrap: wrap;
+}
+
+.admin-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+
+.admin-topbar__brand svg {
+  width: 28px;
+  height: 28px;
+  color: var(--color-fox);
+}
+
+.admin-topbar__brand span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.admin-topbar__brand small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.admin-content {
+  flex: 1;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 18px 64px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.admin-card + .admin-card {
+  margin-top: 18px;
+}
+
+.admin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-card__head h2 {
+  font-size: 19px;
+}
+
+.admin-empty {
+  text-align: center;
+  padding: 30px 12px;
+  color: var(--color-ink-soft);
+}
+
+/* Заявки */
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-row {
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.order-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.order-row__name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.order-row__meta {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+.order-row__product {
+  font-size: 14px;
+  color: var(--color-fox-dark);
+  font-weight: 600;
+}
+
+.order-row__comment {
+  font-size: 14px;
+  color: var(--color-ink-soft);
+  white-space: pre-wrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-pill--new {
+  background: var(--color-fox-tint);
+  color: var(--color-fox-dark);
+}
+
+.status-pill--done {
+  background: #dfe7dc;
+  color: var(--color-forest-dark);
+}
+
+/* Товары */
+.product-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-line-soft);
+  flex-wrap: wrap;
+}
+
+.product-row:last-child {
+  border-bottom: none;
+}
+
+.product-row__info strong {
+  display: block;
+  font-size: 15px;
+}
+
+.product-row__info span {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+.product-row__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.product-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.product-form__row {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .product-form__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+/* Логин */
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-bg);
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.admin-login-card svg {
+  width: 44px;
+  height: 44px;
+  color: var(--color-fox);
+  margin: 0 auto 14px;
+}
+
+.admin-login-card h1 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.admin-login-card p.lead {
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+.admin-login-card form {
+  text-align: left;
+}
