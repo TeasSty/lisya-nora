@@ -36,6 +36,7 @@ export function ProductsPanel() {
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<ProductInput>(EMPTY_FORM)
   const [showUrlField, setShowUrlField] = useState(false)
+  const [imageNote, setImageNote] = useState<string | null>(null)
   const fileInputId = useId()
 
   function load() {
@@ -54,6 +55,7 @@ export function ProductsPanel() {
   function startCreate() {
     setForm(EMPTY_FORM)
     setFormError(null)
+    setImageNote(null)
     setShowUrlField(false)
     setEditingId('new')
   }
@@ -70,6 +72,7 @@ export function ProductsPanel() {
       sortOrder: product.sortOrder,
     })
     setFormError(null)
+    setImageNote(null)
     setShowUrlField(Boolean(imageUrl && !imageUrl.startsWith('data:')))
     setEditingId(product.id)
   }
@@ -77,6 +80,7 @@ export function ProductsPanel() {
   function cancelEdit() {
     setEditingId(null)
     setFormError(null)
+    setImageNote(null)
     setShowUrlField(false)
   }
 
@@ -86,11 +90,13 @@ export function ProductsPanel() {
     if (!file) return
 
     setFormError(null)
+    setImageNote(null)
     setIsCompressing(true)
     try {
-      const dataUrl = await compressImageFile(file)
+      const { dataUrl, note } = await compressImageFile(file)
       setForm((prev) => ({ ...prev, imageUrl: dataUrl }))
       setShowUrlField(false)
+      if (note) setImageNote(note)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Не удалось обработать фото')
     } finally {
@@ -100,6 +106,7 @@ export function ProductsPanel() {
 
   function clearImage() {
     setForm((prev) => ({ ...prev, imageUrl: '' }))
+    setImageNote(null)
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -236,6 +243,8 @@ export function ProductsPanel() {
                   onChange={handleFileChange}
                 />
               </div>
+
+              {imageNote && <p className="image-field__hint">{imageNote}</p>}
 
               <button
                 type="button"
