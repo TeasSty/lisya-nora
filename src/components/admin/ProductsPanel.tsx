@@ -20,6 +20,11 @@ const EMPTY_FORM: ProductInput = {
   sortOrder: 0,
 }
 
+function formatPrice(priceRub: number | null): string {
+  if (priceRub == null) return 'Цена по запросу'
+  return new Intl.NumberFormat('ru-RU').format(priceRub) + ' ₽'
+}
+
 export function ProductsPanel() {
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -31,6 +36,7 @@ export function ProductsPanel() {
 
   function load() {
     setIsLoading(true)
+    setError(null)
     fetchAdminProducts()
       .then((res) => setProducts(res.products))
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить товары'))
@@ -211,29 +217,56 @@ export function ProductsPanel() {
       </div>
 
       <div className="admin-card">
-        {isLoading && <p className="admin-empty">Загружаем товары…</p>}
-        {!isLoading && error && <p className="admin-empty">{error}</p>}
+        {isLoading && (
+          <div className="admin-empty">
+            <strong>Собираем полки…</strong>
+            Загружаем товары каталога.
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="admin-empty" role="alert">
+            <strong>Не получилось загрузить</strong>
+            {error}
+          </div>
+        )}
         {!isLoading && !error && products.length === 0 && (
-          <p className="admin-empty">Каталог пуст — добавьте первый товар.</p>
+          <div className="admin-empty">
+            <strong>Каталог пуст</strong>
+            Добавьте первый товар — и он появится на витрине.
+          </div>
         )}
 
         {!isLoading && !error && products.length > 0 && (
           <div>
             {products.map((product) => (
               <div className="product-row" key={product.id}>
-                <div className="product-row__info">
-                  <strong>
-                    {product.name} {!product.isActive && '(скрыт)'}
-                  </strong>
-                  <span>{CATEGORY_META[product.category].label}</span>
-                </div>
-                <div className="product-row__actions">
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(product)}>
-                    Изменить
-                  </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDelete(product)}>
-                    Удалить
-                  </button>
+                {product.imageUrl ? (
+                  <div className="product-row__thumb">
+                    <img src={product.imageUrl} alt="" loading="lazy" />
+                  </div>
+                ) : (
+                  <div className="product-row__thumb product-row__thumb--empty" aria-hidden="true">
+                    без фото
+                  </div>
+                )}
+                <div className="product-row__body">
+                  <div className="product-row__info">
+                    <strong>
+                      {product.name}
+                      {!product.isActive && <span className="product-row__badge">скрыт</span>}
+                    </strong>
+                    <span>
+                      {CATEGORY_META[product.category].label} · {formatPrice(product.priceRub)}
+                    </span>
+                  </div>
+                  <div className="product-row__actions">
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(product)}>
+                      Изменить
+                    </button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDelete(product)}>
+                      Удалить
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

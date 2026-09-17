@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { adminLogin, adminSession, ApiError } from '../../lib/api'
+import { adminLogin, adminSession, ApiError, DEMO_ADMIN_PASSWORD } from '../../lib/api'
+import { DEMO_MODE } from '../../lib/config'
 import { FoxMark } from '../../components/site/FoxMark'
 
 export function AdminLogin() {
@@ -33,7 +34,13 @@ export function AdminLogin() {
     }
   }
 
-  if (checkingSession) return null
+  if (checkingSession) {
+    return (
+      <div className="admin-login-page">
+        <p className="admin-checking">Проверяем вход…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="admin-login-page">
@@ -66,6 +73,12 @@ export function AdminLogin() {
             {isSubmitting ? 'Входим…' : 'Войти'}
           </button>
         </form>
+
+        {DEMO_MODE && (
+          <p className="admin-login-hint">
+            Демо-режим: пароль <code>{DEMO_ADMIN_PASSWORD}</code>
+          </p>
+        )}
       </div>
     </div>
   )

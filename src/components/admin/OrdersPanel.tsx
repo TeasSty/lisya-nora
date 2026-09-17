@@ -4,7 +4,8 @@ import type { AdminOrder } from '../../lib/types'
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso.replace(' ', 'T') + 'Z').toLocaleString('ru-RU', {
+    const value = iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z'
+    return new Date(value).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -24,6 +25,7 @@ export function OrdersPanel() {
 
   function load() {
     setIsLoading(true)
+    setError(null)
     fetchAdminOrders()
       .then((res) => setOrders(res.orders))
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить заявки'))
@@ -47,25 +49,49 @@ export function OrdersPanel() {
     }
   }
 
+  const newCount = orders.filter((order) => order.status === 'new').length
+
   return (
     <div className="admin-card">
       <div className="admin-card__head">
-        <h2>Заявки с сайта</h2>
+        <h2>
+          Заявки с сайта
+          {!isLoading && !error && <span className="admin-card__count">{orders.length}</span>}
+        </h2>
         <button type="button" className="btn btn-ghost btn-sm" onClick={load}>
           Обновить
         </button>
       </div>
 
-      {isLoading && <p className="admin-empty">Загружаем заявки…</p>}
-      {!isLoading && error && <p className="admin-empty">{error}</p>}
+      {!isLoading && !error && orders.length > 0 && (
+        <p className="order-row__meta" style={{ marginBottom: 14 }}>
+          Новых: <strong>{newCount}</strong>
+        </p>
+      )}
+
+      {isLoading && (
+        <div className="admin-empty">
+          <strong>Заглядываем в заявки…</strong>
+          Подождите секунду.
+        </div>
+      )}
+      {!isLoading && error && (
+        <div className="admin-empty" role="alert">
+          <strong>Не получилось загрузить</strong>
+          {error}
+        </div>
+      )}
       {!isLoading && !error && orders.length === 0 && (
-        <p className="admin-empty">Заявок пока нет — как только кто-то оставит заявку на сайте, она появится здесь.</p>
+        <div className="admin-empty">
+          <strong>Заявок пока нет</strong>
+          Как только кто-то оставит заявку на сайте, она появится здесь.
+        </div>
       )}
 
       {!isLoading && !error && orders.length > 0 && (
         <div className="order-list">
           {orders.map((order) => (
-            <div className="order-row" key={order.id}>
+            <article className="order-row" key={order.id}>
               <div className="order-row__top">
                 <span className="order-row__name">{order.name}</span>
                 <span className={`status-pill status-pill--${order.status}`}>
@@ -77,7 +103,7 @@ export function OrdersPanel() {
                 <a href={`tel:${order.phone.replace(/\s+/g, '')}`}>{order.phone}</a> · {formatDate(order.createdAt)}
               </span>
               {order.comment && <p className="order-row__comment">«{order.comment}»</p>}
-              <div>
+              <div className="order-row__actions">
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
@@ -87,7 +113,7 @@ export function OrdersPanel() {
                   {order.status === 'new' ? 'Отметить выполненной' : 'Вернуть в новые'}
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}

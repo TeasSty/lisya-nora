@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { OrdersPanel } from '../../components/admin/OrdersPanel'
 import { ProductsPanel } from '../../components/admin/ProductsPanel'
 import { FoxMark } from '../../components/site/FoxMark'
 import { adminLogout, adminSession } from '../../lib/api'
+import { DEMO_MODE } from '../../lib/config'
 
 type Tab = 'orders' | 'products'
 
@@ -26,27 +27,53 @@ export function AdminDashboard() {
     navigate('/admin', { replace: true })
   }
 
-  if (checkingSession) return null
+  if (checkingSession) {
+    return (
+      <div className="admin-shell">
+        <p className="admin-checking">Открываем панель…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="admin-shell">
       <header className="admin-topbar">
-        <div className="admin-topbar__brand">
+        <Link to="/" className="admin-topbar__brand" aria-label="На сайт «Лисья нора»">
           <FoxMark />
           <div>
             <span>Лисья нора</span>
             <small>Панель администратора</small>
           </div>
+        </Link>
+        <div className="admin-topbar__actions">
+          <Link to="/" className="btn btn-ghost btn-sm">
+            На сайт
+          </Link>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
+            Выйти
+          </button>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
-          Выйти
-        </button>
       </header>
 
       <div className="admin-content">
-        <div className="admin-tabs">
+        <div className="admin-intro">
+          <span className="eyebrow">Рабочая нора</span>
+          <h1>Заявки и каталог</h1>
+          <p>Простая панель без доставки: смотрите заявки с сайта и сами обновляйте товары на витрине.</p>
+        </div>
+
+        {DEMO_MODE && (
+          <div className="admin-banner" role="status">
+            Демо-режим: данные хранятся в этом браузере. После подключения базы на сервере заявки и товары
+            будут общими для всех устройств.
+          </div>
+        )}
+
+        <div className="admin-tabs" role="tablist" aria-label="Разделы панели">
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'orders'}
             className={`chip ${tab === 'orders' ? 'is-active' : ''}`}
             onClick={() => setTab('orders')}
           >
@@ -54,6 +81,8 @@ export function AdminDashboard() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'products'}
             className={`chip ${tab === 'products' ? 'is-active' : ''}`}
             onClick={() => setTab('products')}
           >
