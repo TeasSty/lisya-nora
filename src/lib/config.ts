@@ -3,5 +3,8 @@
  * В DEMO_MODE заявки и товары панели живут в localStorage этого браузера
  * (удобно показать заказчице), а Cloudflare Worker / D1 или MySQL на reg.ru
  * подключаются следующим шагом: достаточно поставить DEMO_MODE = false.
+ *
+ * Фото товаров: в DEMO_MODE и без R2 сохраняются как сжатый data URL в imageUrl
+ * (D1 TEXT). Для продакшена с большим каталогом лучше подключить Cloudflare R2.
  */
 export const DEMO_MODE = true

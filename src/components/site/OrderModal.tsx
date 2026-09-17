@@ -1,13 +1,19 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { ApiError, submitOrder } from '../../lib/api'
+import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import type { Product } from '../../lib/types'
 
-interface OrderModalProps {
-  product: Product
-  onClose: () => void
+export interface CheckoutProduct extends Product {
+  quantity?: number
 }
 
-export function OrderModal({ product, onClose }: OrderModalProps) {
+interface OrderModalProps {
+  products: CheckoutProduct[]
+  onClose: () => void
+  onSuccess?: () => void
+}
+
+export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [comment, setComment] = useState('')
@@ -69,17 +75,21 @@ export function OrderModal({ product, onClose }: OrderModalProps) {
       setError('Проверьте номер телефона')
       return
     }
+    if (products.length === 0) {
+      setError('Добавьте хотя бы один товар')
+      return
+    }
 
     setStatus('submitting')
     try {
       await submitOrder({
         name: name.trim(),
         phone: phone.trim(),
-        productId: product.id,
-        productName: product.name,
         comment: comment.trim(),
+        items: productsToOrderItems(products),
       })
       setStatus('done')
+      onSuccess?.()
     } catch (err) {
       setStatus('idle')
       setError(err instanceof ApiError ? err.message : 'Не удалось отправить заявку')
@@ -115,7 +125,23 @@ export function OrderModal({ product, onClose }: OrderModalProps) {
         ) : (
           <>
             <h3 id={titleId}>Оставить заявку</h3>
-            <p className="modal-panel__product">Товар: {product.name}</p>
+            <div className="modal-panel__products" aria-label="Выбранные товары">
+              <p className="modal-panel__product">
+                {products.length === 1 ? 'Товар:' : `Товары (${products.length}):`}
+              </p>
+              <ul className="modal-panel__product-list">
+                {products.map((product) => (
+                  <li key={product.id}>
+                    {formatOrderItemLine({
+                      productId: product.id,
+                      productName: product.name,
+                      priceRub: product.priceRub,
+                      quantity: product.quantity ?? 1,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             <form onSubmit={handleSubmit}>
               <div className="form-field">

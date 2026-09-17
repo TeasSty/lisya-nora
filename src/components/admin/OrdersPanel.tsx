@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, fetchAdminOrders, updateOrderStatus } from '../../lib/api'
+import { normalizeAdminOrder, formatOrderItemLine } from '../../lib/orderItems'
 import type { AdminOrder } from '../../lib/types'
 
 function formatDate(iso: string): string {
@@ -27,7 +28,7 @@ export function OrdersPanel() {
     setIsLoading(true)
     setError(null)
     fetchAdminOrders()
-      .then((res) => setOrders(res.orders))
+      .then((res) => setOrders(res.orders.map((order) => normalizeAdminOrder(order))))
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить заявки'))
       .finally(() => setIsLoading(false))
   }
@@ -90,31 +91,47 @@ export function OrdersPanel() {
 
       {!isLoading && !error && orders.length > 0 && (
         <div className="order-list">
-          {orders.map((order) => (
-            <article className="order-row" key={order.id}>
-              <div className="order-row__top">
-                <span className="order-row__name">{order.name}</span>
-                <span className={`status-pill status-pill--${order.status}`}>
-                  {order.status === 'new' ? 'Новая' : 'Выполнена'}
+          {orders.map((order) => {
+            const items = normalizeAdminOrder(order).items
+            return (
+              <article className="order-row" key={order.id}>
+                <div className="order-row__top">
+                  <span className="order-row__name">{order.name}</span>
+                  <span className={`status-pill status-pill--${order.status}`}>
+                    {order.status === 'new' ? 'Новая' : 'Выполнена'}
+                  </span>
+                </div>
+
+                {items.length === 1 ? (
+                  <span className="order-row__product">{formatOrderItemLine(items[0])}</span>
+                ) : (
+                  <ul className="order-row__items">
+                    {items.map((item, index) => (
+                      <li key={`${order.id}-${index}-${item.productName}`}>
+                        {formatOrderItemLine(item)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <span className="order-row__meta">
+                  <a href={`tel:${order.phone.replace(/\s+/g, '')}`}>{order.phone}</a> ·{' '}
+                  {formatDate(order.createdAt)}
                 </span>
-              </div>
-              <span className="order-row__product">{order.productName}</span>
-              <span className="order-row__meta">
-                <a href={`tel:${order.phone.replace(/\s+/g, '')}`}>{order.phone}</a> · {formatDate(order.createdAt)}
-              </span>
-              {order.comment && <p className="order-row__comment">«{order.comment}»</p>}
-              <div className="order-row__actions">
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  disabled={busyId === order.id}
-                  onClick={() => toggleStatus(order)}
-                >
-                  {order.status === 'new' ? 'Отметить выполненной' : 'Вернуть в новые'}
-                </button>
-              </div>
-            </article>
-          ))}
+                {order.comment && <p className="order-row__comment">«{order.comment}»</p>}
+                <div className="order-row__actions">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={busyId === order.id}
+                    onClick={() => toggleStatus(order)}
+                  >
+                    {order.status === 'new' ? 'Отметить выполненной' : 'Вернуть в новые'}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
         </div>
       )}
     </div>

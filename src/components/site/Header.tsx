@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useCart } from '../../lib/cart'
 import { FoxMark } from './FoxMark'
 
 const NAV_LINKS = [
@@ -10,6 +11,7 @@ const NAV_LINKS = [
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const { count, openCart } = useCart()
 
   useEffect(() => {
     if (!isOpen) return
@@ -47,6 +49,20 @@ export function Header() {
           <a className="site-header__phone" href="tel:+79213326427">
             +7 921 332-64-27
           </a>
+
+          <button
+            type="button"
+            className="site-header__cart"
+            onClick={openCart}
+            aria-label={count > 0 ? `Корзина, ${count} товар(ов)` : 'Открыть корзину'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M6 8h12l-1 11H7L6 8Z" strokeLinejoin="round" />
+              <path d="M9 8V7a3 3 0 0 1 6 0v1" strokeLinecap="round" />
+            </svg>
+            {count > 0 && <span className="site-header__cart-count">{count > 99 ? '99+' : count}</span>}
+          </button>
+
           <button
             type="button"
             className={`site-header__menu-btn${isOpen ? ' is-open' : ''}`}
@@ -71,6 +87,18 @@ export function Header() {
               </a>
             </li>
           ))}
+          <li>
+            <button
+              type="button"
+              className="site-mobile-nav__cart"
+              onClick={() => {
+                setIsOpen(false)
+                openCart()
+              }}
+            >
+              Корзина{count > 0 ? ` (${count})` : ''}
+            </button>
+          </li>
           <li>
             <a href="tel:+79213326427" onClick={() => setIsOpen(false)}>
               Позвонить: +7 921 332-64-27

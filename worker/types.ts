@@ -14,12 +14,20 @@ export interface ProductRow {
   created_at: string
 }
 
+export interface OrderItemPayload {
+  productId: number | null
+  productName: string
+  priceRub: number | null
+  quantity?: number
+}
+
 export interface OrderRow {
   id: number
   customer_name: string
   phone: string
   product_id: number | null
   product_name: string
+  items_json: string | null
   comment: string
   status: 'new' | 'done'
   created_at: string

@@ -1,7 +1,8 @@
 import type { ProductCategory } from './categories'
 import { DEMO_MODE } from './config'
 import { DEMO_PRODUCTS } from '../data/demoProducts'
-import type { AdminOrder, AdminProduct, Product } from './types'
+import { normalizeAdminOrder, summarizeProductNames } from './orderItems'
+import type { AdminOrder, AdminProduct, OrderItem, Product } from './types'
 
 class ApiError extends Error {}
 
@@ -53,7 +54,10 @@ function writeDemoProducts(products: AdminProduct[]): void {
 function readDemoOrders(): AdminOrder[] {
   try {
     const raw = localStorage.getItem(DEMO_ORDERS_KEY)
-    if (raw) return JSON.parse(raw) as AdminOrder[]
+    if (raw) {
+      const parsed = JSON.parse(raw) as AdminOrder[]
+      return parsed.map((order) => normalizeAdminOrder(order))
+    }
   } catch {
     /* ignore */
   }
@@ -99,21 +103,68 @@ export function fetchProducts(): Promise<{ products: Product[] }> {
 export interface OrderPayload {
   name: string
   phone: string
+  comment: string
+  /** Новые заявки: список позиций из корзины. */
+  items: OrderItem[]
+  /** Legacy-поля для совместимости со старым API. */
+  productId?: number | null
+  productName?: string
+}
+
+function normalizeOrderPayload(payload: OrderPayload): {
+  name: string
+  phone: string
+  comment: string
+  items: OrderItem[]
   productId: number | null
   productName: string
-  comment: string
+} {
+  const items =
+    payload.items?.length > 0
+      ? payload.items.map((item) => ({
+          productId: item.productId ?? null,
+          productName: item.productName.trim(),
+          priceRub: item.priceRub ?? null,
+          quantity: item.quantity && item.quantity > 0 ? item.quantity : 1,
+        }))
+      : payload.productName
+        ? [
+            {
+              productId: payload.productId ?? null,
+              productName: payload.productName.trim(),
+              priceRub: null,
+              quantity: 1,
+            },
+          ]
+        : []
+
+  const validItems = items.filter((item) => item.productName.length > 0)
+  const productName = summarizeProductNames(validItems)
+  const productId = validItems.length === 1 ? validItems[0].productId : null
+
+  return {
+    name: payload.name,
+    phone: payload.phone,
+    comment: payload.comment,
+    items: validItems,
+    productId,
+    productName,
+  }
 }
 
 export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
+  const normalized = normalizeOrderPayload(payload)
+
   if (DEMO_MODE) {
     const orders = readDemoOrders()
     const next: AdminOrder = {
       id: Date.now(),
-      name: payload.name,
-      phone: payload.phone,
-      productId: payload.productId,
-      productName: payload.productName,
-      comment: payload.comment,
+      name: normalized.name,
+      phone: normalized.phone,
+      productId: normalized.productId,
+      productName: normalized.productName,
+      items: normalized.items,
+      comment: normalized.comment,
       status: 'new',
       createdAt: new Date().toISOString(),
     }
@@ -122,7 +173,7 @@ export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
   }
   return request('/api/orders', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(normalized),
   })
 }
 
@@ -159,7 +210,9 @@ export function fetchAdminOrders(): Promise<{ orders: AdminOrder[] }> {
     requireDemoAuth()
     return demoDelay({ orders: readDemoOrders() }, 300)
   }
-  return request('/api/admin/orders')
+  return request('/api/admin/orders').then((res) => ({
+    orders: (res as { orders: AdminOrder[] }).orders.map((order) => normalizeAdminOrder(order)),
+  }))
 }
 
 export function updateOrderStatus(id: number, status: 'new' | 'done'): Promise<{ ok: true }> {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { About } from '../components/site/About'
 import { BurrowMap, type RoomId } from '../components/site/BurrowMap'
+import { CartDrawer } from '../components/site/CartDrawer'
 import { Catalog } from '../components/site/Catalog'
 import { Footer } from '../components/site/Footer'
 import { Header } from '../components/site/Header'
@@ -9,15 +10,16 @@ import { Location } from '../components/site/Location'
 import { OrderModal } from '../components/site/OrderModal'
 import { Reviews } from '../components/site/Reviews'
 import { ApiError, fetchProducts } from '../lib/api'
+import { CartProvider, useCart } from '../lib/cart'
 import { useReveal } from '../lib/useReveal'
 import type { Product } from '../lib/types'
 
-export function PublicSite() {
+function PublicSiteInner() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomId>('all')
-  const [orderProduct, setOrderProduct] = useState<Product | null>(null)
+  const { addProduct, items, checkoutOpen, closeCheckout, clear } = useCart()
   const noraRef = useReveal<HTMLDivElement>()
 
   useEffect(() => {
@@ -40,6 +42,11 @@ export function PublicSite() {
       cancelled = true
     }
   }, [])
+
+  const checkoutProducts = items.map((item) => ({
+    ...item.product,
+    quantity: item.quantity,
+  }))
 
   return (
     <>
@@ -70,7 +77,7 @@ export function PublicSite() {
                 loadError={loadError}
                 selected={selectedRoom}
                 onSelect={setSelectedRoom}
-                onOrder={setOrderProduct}
+                onAddToCart={addProduct}
               />
             </div>
           </div>
@@ -82,7 +89,19 @@ export function PublicSite() {
       </main>
       <Footer />
 
-      {orderProduct && <OrderModal product={orderProduct} onClose={() => setOrderProduct(null)} />}
+      <CartDrawer />
+
+      {checkoutOpen && checkoutProducts.length > 0 && (
+        <OrderModal products={checkoutProducts} onClose={closeCheckout} onSuccess={clear} />
+      )}
     </>
+  )
+}
+
+export function PublicSite() {
+  return (
+    <CartProvider>
+      <PublicSiteInner />
+    </CartProvider>
   )
 }

@@ -1,12 +1,21 @@
 import { Hono, type MiddlewareHandler } from 'hono'
 import { clearSessionCookie, createSessionCookie, isSessionValid, timingSafeEqual } from './auth.js'
-import { PRODUCT_CATEGORIES, type OrderRow, type ProductCategory, type ProductRow } from './types.js'
+import {
+  PRODUCT_CATEGORIES,
+  type OrderItemPayload,
+  type OrderRow,
+  type ProductCategory,
+  type ProductRow,
+} from './types.js'
 
 interface Env {
   DB: D1Database
   ADMIN_PASSWORD: string
   SESSION_SECRET: string
 }
+
+/** Сжатые data URL в D1 без R2; для продакшена лучше вынести фото в R2. */
+const MAX_IMAGE_URL_CHARS = 700_000
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -46,13 +55,49 @@ function parsePriceRub(value: unknown): number | null {
   return Math.round(num)
 }
 
+function parseOrderItems(raw: unknown): OrderItemPayload[] {
+  if (!Array.isArray(raw)) return []
+  const items: OrderItemPayload[] = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue
+    const record = entry as Record<string, unknown>
+    const productName = typeof record.productName === 'string' ? record.productName.trim() : ''
+    if (!productName || productName.length > 200) continue
+    const productId =
+      typeof record.productId === 'number' && Number.isFinite(record.productId) ? record.productId : null
+    items.push({
+      productId,
+      productName,
+      priceRub: parsePriceRub(record.priceRub),
+      quantity:
+        typeof record.quantity === 'number' && Number.isFinite(record.quantity) && record.quantity > 0
+          ? Math.min(99, Math.round(record.quantity))
+          : 1,
+    })
+  }
+  return items
+}
+
+function parseItemsJson(raw: string | null): OrderItemPayload[] | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    const items = parseOrderItems(parsed)
+    return items.length > 0 ? items : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function toAdminOrder(row: OrderRow) {
+  const items = parseItemsJson(row.items_json)
   return {
     id: row.id,
     name: row.customer_name,
     phone: row.phone,
     productId: row.product_id,
     productName: row.product_name,
+    ...(items ? { items } : {}),
     comment: row.comment,
     status: row.status,
     createdAt: row.created_at,
@@ -61,6 +106,20 @@ function toAdminOrder(row: OrderRow) {
 
 function isValidCategory(value: unknown): value is ProductCategory {
   return typeof value === 'string' && (PRODUCT_CATEGORIES as readonly string[]).includes(value)
+}
+
+function normalizeImageUrl(value: unknown): string | null | { error: string } {
+  if (value === null || value === undefined || value === '') return null
+  if (typeof value !== 'string') return { error: 'Некорректная ссылка на фото' }
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.length > MAX_IMAGE_URL_CHARS) {
+    return { error: 'Фото слишком большое. Выберите файл поменьше или сожмите изображение.' }
+  }
+  if (trimmed.startsWith('data:image/') || /^https?:\/\//i.test(trimmed) || trimmed.startsWith('/')) {
+    return trimmed
+  }
+  return { error: 'Укажите файл, http(s)-ссылку или путь к фото' }
 }
 
 // ---------- Публичные маршруты ----------
@@ -84,15 +143,31 @@ app.post('/api/orders', async (c) => {
       phone?: unknown
       productId?: unknown
       productName?: unknown
+      items?: unknown
       comment?: unknown
     }>()
 
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
-    const productName = typeof body.productName === 'string' ? body.productName.trim() : ''
     const comment = typeof body.comment === 'string' ? body.comment.trim() : ''
-    const productId =
-      typeof body.productId === 'number' && Number.isFinite(body.productId) ? body.productId : null
+
+    let items = parseOrderItems(body.items)
+    if (items.length === 0) {
+      const legacyName = typeof body.productName === 'string' ? body.productName.trim() : ''
+      if (legacyName) {
+        items = [
+          {
+            productId:
+              typeof body.productId === 'number' && Number.isFinite(body.productId)
+                ? body.productId
+                : null,
+            productName: legacyName,
+            priceRub: null,
+            quantity: 1,
+          },
+        ]
+      }
+    }
 
     if (!name || name.length > 120) {
       return c.json({ error: 'Укажите имя' }, 400)
@@ -100,17 +175,33 @@ app.post('/api/orders', async (c) => {
     if (!phone || phone.length > 40) {
       return c.json({ error: 'Укажите телефон' }, 400)
     }
-    if (!productName || productName.length > 200) {
+    if (items.length === 0) {
       return c.json({ error: 'Не выбран товар' }, 400)
+    }
+    if (items.length > 30) {
+      return c.json({ error: 'Слишком много позиций в заявке' }, 400)
     }
     if (comment.length > 1000) {
       return c.json({ error: 'Комментарий слишком длинный' }, 400)
     }
 
+    const productName = items
+      .map((item) =>
+        item.quantity && item.quantity > 1
+          ? `${item.productName} × ${item.quantity}`
+          : item.productName,
+      )
+      .join(', ')
+    if (productName.length > 2000) {
+      return c.json({ error: 'Слишком длинный список товаров' }, 400)
+    }
+    const productId = items.length === 1 ? items[0].productId : null
+    const itemsJson = JSON.stringify(items)
+
     await c.env.DB.prepare(
-      'INSERT INTO orders (customer_name, phone, product_id, product_name, comment, status) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO orders (customer_name, phone, product_id, product_name, items_json, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-      .bind(name, phone, productId, productName, comment, 'new')
+      .bind(name, phone, productId, productName, itemsJson, comment, 'new')
       .run()
 
     return c.json({ ok: true })
@@ -168,7 +259,7 @@ app.use('/api/admin/products', requireAuth)
 app.get('/api/admin/orders', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, customer_name, phone, product_id, product_name, comment, status, created_at FROM orders ORDER BY created_at DESC, id DESC',
+      'SELECT id, customer_name, phone, product_id, product_name, items_json, comment, status, created_at FROM orders ORDER BY created_at DESC, id DESC',
     ).all<OrderRow>()
     return c.json({ orders: results.map(toAdminOrder) })
   } catch (error) {
@@ -223,7 +314,11 @@ app.post('/api/admin/products', async (c) => {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
-    const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl.trim() ? body.imageUrl.trim() : null
+    const imageResult = normalizeImageUrl(body.imageUrl)
+    if (imageResult && typeof imageResult === 'object' && 'error' in imageResult) {
+      return c.json({ error: imageResult.error }, 400)
+    }
+    const imageUrl = imageResult
     const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
@@ -263,7 +358,11 @@ app.put('/api/admin/products/:id', async (c) => {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
-    const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl.trim() ? body.imageUrl.trim() : null
+    const imageResult = normalizeImageUrl(body.imageUrl)
+    if (imageResult && typeof imageResult === 'object' && 'error' in imageResult) {
+      return c.json({ error: imageResult.error }, 400)
+    }
+    const imageUrl = imageResult
     const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0

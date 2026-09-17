@@ -10,10 +10,17 @@ interface CatalogProps {
   loadError: string | null
   selected: RoomId
   onSelect: (room: RoomId) => void
-  onOrder: (product: Product) => void
+  onAddToCart: (product: Product) => void
 }
 
-export function Catalog({ products, isLoading, loadError, selected, onSelect, onOrder }: CatalogProps) {
+export function Catalog({
+  products,
+  isLoading,
+  loadError,
+  selected,
+  onSelect,
+  onAddToCart,
+}: CatalogProps) {
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -80,7 +87,7 @@ export function Catalog({ products, isLoading, loadError, selected, onSelect, on
       {!isLoading && !loadError && filtered.length > 0 && (
         <div className="catalog__grid">
           {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} onOrder={onOrder} />
+            <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
           ))}
         </div>
       )}

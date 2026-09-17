@@ -16,12 +16,25 @@ export interface AdminProduct extends Product {
   createdAt: string
 }
 
+/** Одна позиция в заявке (корзина может содержать несколько). */
+export interface OrderItem {
+  productId: number | null
+  productName: string
+  priceRub: number | null
+  /** Количество; у старых заявок может отсутствовать (= 1). */
+  quantity?: number
+}
+
 export interface AdminOrder {
   id: number
   name: string
   phone: string
+  /** Первый товар / legacy — для совместимости со старыми заявками. */
   productId: number | null
+  /** Сводка названий или единственный товар (legacy). */
   productName: string
+  /** Полный список позиций; у старых заявок может отсутствовать. */
+  items?: OrderItem[]
   comment: string
   status: 'new' | 'done'
   createdAt: string

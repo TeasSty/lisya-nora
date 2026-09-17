@@ -4,12 +4,12 @@ import { ProductPattern } from './ProductPattern'
 
 interface ProductCardProps {
   product: Product
-  onOrder: (product: Product) => void
+  onAddToCart: (product: Product) => void
 }
 
 const PRICE_FORMATTER = new Intl.NumberFormat('ru-RU')
 
-export function ProductCard({ product, onOrder }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   return (
     <article className="product-card">
       <div className="product-card__media">
@@ -28,8 +28,8 @@ export function ProductCard({ product, onOrder }: ProductCardProps) {
         </div>
         <h3>{product.name}</h3>
         <p>{product.description}</p>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => onOrder(product)}>
-          Оставить заявку
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => onAddToCart(product)}>
+          В корзину
         </button>
       </div>
     </article>

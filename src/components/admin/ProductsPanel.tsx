@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type ChangeEvent, type FormEvent } from 'react'
 import { CATEGORY_META, CATEGORY_ORDER, type ProductCategory } from '../../lib/categories'
 import {
   ApiError,
@@ -8,6 +8,7 @@ import {
   updateAdminProduct,
   type ProductInput,
 } from '../../lib/api'
+import { compressImageFile } from '../../lib/compressImage'
 import type { AdminProduct } from '../../lib/types'
 
 const EMPTY_FORM: ProductInput = {
@@ -31,8 +32,11 @@ export function ProductsPanel() {
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<ProductInput>(EMPTY_FORM)
+  const [showUrlField, setShowUrlField] = useState(false)
+  const fileInputId = useId()
 
   function load() {
     setIsLoading(true)
@@ -50,26 +54,52 @@ export function ProductsPanel() {
   function startCreate() {
     setForm(EMPTY_FORM)
     setFormError(null)
+    setShowUrlField(false)
     setEditingId('new')
   }
 
   function startEdit(product: AdminProduct) {
+    const imageUrl = product.imageUrl ?? ''
     setForm({
       name: product.name,
       description: product.description,
       category: product.category,
-      imageUrl: product.imageUrl ?? '',
+      imageUrl,
       priceRub: product.priceRub,
       isActive: product.isActive,
       sortOrder: product.sortOrder,
     })
     setFormError(null)
+    setShowUrlField(Boolean(imageUrl && !imageUrl.startsWith('data:')))
     setEditingId(product.id)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setFormError(null)
+    setShowUrlField(false)
+  }
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setFormError(null)
+    setIsCompressing(true)
+    try {
+      const dataUrl = await compressImageFile(file)
+      setForm((prev) => ({ ...prev, imageUrl: dataUrl }))
+      setShowUrlField(false)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Не удалось обработать фото')
+    } finally {
+      setIsCompressing(false)
+    }
+  }
+
+  function clearImage() {
+    setForm((prev) => ({ ...prev, imageUrl: '' }))
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -89,6 +119,7 @@ export function ProductsPanel() {
         await updateAdminProduct(editingId, form)
       }
       setEditingId(null)
+      setShowUrlField(false)
       load()
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : 'Не удалось сохранить товар')
@@ -178,15 +209,54 @@ export function ProductsPanel() {
               />
             </div>
 
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="p-image">Ссылка на фото (необязательно)</label>
-              <input
-                id="p-image"
-                type="url"
-                placeholder="https://…"
-                value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              />
+            <div className="image-field">
+              <span className="image-field__label">Фото товара</span>
+
+              {form.imageUrl ? (
+                <div className="image-field__preview-wrap">
+                  <img className="image-field__preview" src={form.imageUrl} alt="Превью фото товара" />
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={clearImage}>
+                    Убрать фото
+                  </button>
+                </div>
+              ) : (
+                <p className="image-field__hint">Пока без фото — можно загрузить с компьютера.</p>
+              )}
+
+              <div className="image-field__actions">
+                <label className="btn btn-ghost btn-sm image-field__file-btn" htmlFor={fileInputId}>
+                  {isCompressing ? 'Сжимаем…' : form.imageUrl ? 'Заменить фото' : 'Выбрать фото'}
+                </label>
+                <input
+                  id={fileInputId}
+                  className="visually-hidden"
+                  type="file"
+                  accept="image/*"
+                  disabled={isCompressing || isSaving}
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              <button
+                type="button"
+                className="image-field__link-toggle"
+                onClick={() => setShowUrlField((v) => !v)}
+              >
+                {showUrlField ? 'Скрыть поле ссылки' : 'или вставить ссылку'}
+              </button>
+
+              {showUrlField && (
+                <div className="form-field" style={{ margin: 0 }}>
+                  <label htmlFor="p-image">Ссылка на фото</label>
+                  <input
+                    id="p-image"
+                    type="url"
+                    placeholder="https://…"
+                    value={form.imageUrl.startsWith('data:') ? '' : form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
             <label className="checkbox-field">
@@ -205,7 +275,7 @@ export function ProductsPanel() {
             )}
 
             <div className="product-row__actions">
-              <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving || isCompressing}>
                 {isSaving ? 'Сохраняем…' : 'Сохранить'}
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={cancelEdit}>
