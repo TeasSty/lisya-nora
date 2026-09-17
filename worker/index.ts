@@ -21,6 +21,7 @@ function toPublicProduct(row: ProductRow) {
     description: row.description,
     category: row.category,
     imageUrl: row.image_url,
+    priceRub: row.price_rub,
   }
 }
 
@@ -31,10 +32,18 @@ function toAdminProduct(row: ProductRow) {
     description: row.description,
     category: row.category,
     imageUrl: row.image_url,
+    priceRub: row.price_rub,
     isActive: row.is_active === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
   }
+}
+
+function parsePriceRub(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const num = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(num) || num < 0) return null
+  return Math.round(num)
 }
 
 function toAdminOrder(row: OrderRow) {
@@ -59,7 +68,7 @@ function isValidCategory(value: unknown): value is ProductCategory {
 app.get('/api/products', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, name, description, category, image_url, is_active, sort_order, created_at FROM products WHERE is_active = 1 ORDER BY sort_order ASC, id ASC',
+      'SELECT id, name, description, category, image_url, price_rub, is_active, sort_order, created_at FROM products WHERE is_active = 1 ORDER BY sort_order ASC, id ASC',
     ).all<ProductRow>()
     return c.json({ products: results.map(toPublicProduct) })
   } catch (error) {
@@ -190,7 +199,7 @@ app.patch('/api/admin/orders/:id', async (c) => {
 app.get('/api/admin/products', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, name, description, category, image_url, is_active, sort_order, created_at FROM products ORDER BY sort_order ASC, id ASC',
+      'SELECT id, name, description, category, image_url, price_rub, is_active, sort_order, created_at FROM products ORDER BY sort_order ASC, id ASC',
     ).all<ProductRow>()
     return c.json({ products: results.map(toAdminProduct) })
   } catch (error) {
@@ -206,6 +215,7 @@ app.post('/api/admin/products', async (c) => {
       description?: unknown
       category?: unknown
       imageUrl?: unknown
+      priceRub?: unknown
       isActive?: unknown
       sortOrder?: unknown
     }>()
@@ -214,6 +224,7 @@ app.post('/api/admin/products', async (c) => {
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
     const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl.trim() ? body.imageUrl.trim() : null
+    const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
 
@@ -222,9 +233,9 @@ app.post('/api/admin/products', async (c) => {
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     const result = await c.env.DB.prepare(
-      'INSERT INTO products (name, description, category, image_url, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
+      'INSERT INTO products (name, description, category, image_url, price_rub, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
     )
-      .bind(name, description, category, imageUrl, isActive ? 1 : 0, sortOrder)
+      .bind(name, description, category, imageUrl, priceRub, isActive ? 1 : 0, sortOrder)
       .first<{ id: number }>()
 
     return c.json({ ok: true, id: result?.id })
@@ -244,6 +255,7 @@ app.put('/api/admin/products/:id', async (c) => {
       description?: unknown
       category?: unknown
       imageUrl?: unknown
+      priceRub?: unknown
       isActive?: unknown
       sortOrder?: unknown
     }>()
@@ -252,6 +264,7 @@ app.put('/api/admin/products/:id', async (c) => {
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
     const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl.trim() ? body.imageUrl.trim() : null
+    const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
 
@@ -260,9 +273,9 @@ app.put('/api/admin/products/:id', async (c) => {
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     await c.env.DB.prepare(
-      'UPDATE products SET name = ?, description = ?, category = ?, image_url = ?, is_active = ?, sort_order = ? WHERE id = ?',
+      'UPDATE products SET name = ?, description = ?, category = ?, image_url = ?, price_rub = ?, is_active = ?, sort_order = ? WHERE id = ?',
     )
-      .bind(name, description, category, imageUrl, isActive ? 1 : 0, sortOrder, id)
+      .bind(name, description, category, imageUrl, priceRub, isActive ? 1 : 0, sortOrder, id)
       .run()
 
     return c.json({ ok: true })

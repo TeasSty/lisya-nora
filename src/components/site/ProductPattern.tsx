@@ -7,7 +7,7 @@ interface ProductPatternProps {
 
 const BLOB_BY_CATEGORY: Record<ProductCategory, string> = {
   jewelry: '#f0d9c6',
-  watches: '#e4ddc3',
+  forge: '#e4ddc3',
   curiosities: '#e6d7c2',
   charms: '#dee2cd',
   decor: '#f2ddc3',
@@ -34,24 +34,23 @@ function CategoryIcon({ category, stroke = 'var(--color-ink)' }: { category: Pro
           <path d="M66 40 L60 62" />
         </g>
       )
-    case 'watches':
+    case 'forge':
       return (
         <g {...common}>
-          <circle cx="60" cy="52" r="24" />
-          <path d="M60 52 L60 38" />
-          <path d="M60 52 L70 58" />
-          <path d="M52 20 L68 20" />
-          <path d="M55 20 L55 28" />
-          <path d="M65 20 L65 28" />
+          <path d="M36 72 L52 56 L64 68 L48 84 Z" />
+          <path d="M58 62 L74 46" />
+          <rect x="70" y="30" width="20" height="14" rx="2" transform="rotate(45 80 37)" />
+          <path d="M40 84 L32 92" />
         </g>
       )
     case 'curiosities':
       return (
         <g {...common}>
-          <circle cx="44" cy="34" r="10" />
-          <path d="M51 41 L78 68" />
-          <path d="M68 58 L74 52" />
-          <path d="M74 64 L82 56" />
+          <path d="M42 30 L36 18 M78 30 L84 18" />
+          <path d="M38 52 C38 34 48 24 60 24 C72 24 82 34 82 52 C82 70 72 82 60 82 C48 82 38 70 38 52 Z" />
+          <circle cx="50" cy="48" r="2.6" fill={stroke} stroke="none" />
+          <circle cx="70" cy="48" r="2.6" fill={stroke} stroke="none" />
+          <path d="M54 62 C57 66 63 66 66 62" />
         </g>
       )
     case 'charms':

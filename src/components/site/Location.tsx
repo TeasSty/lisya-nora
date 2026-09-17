@@ -1,46 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { useReveal } from '../../lib/useReveal'
 
-function WaySketch() {
-  return (
-    <svg viewBox="0 0 320 260" role="img" aria-labelledby="way-sketch-title">
-      <title id="way-sketch-title">Схематичная зарисовка пути от Выборгского замка до магазина</title>
-      {/* силуэт замка как ориентир старого города */}
-      <g transform="translate(30,40)" fill="var(--color-bg)" opacity="0.92">
-        <rect x="0" y="40" width="70" height="50" />
-        <rect x="10" y="10" width="18" height="80" />
-        <polygon points="10,10 19,-6 28,10" />
-        <rect x="44" y="0" width="16" height="90" />
-        <polygon points="44,0 52,-14 60,0" />
-      </g>
-
-      {/* пунктирная тропа */}
-      <path
-        d="M95 95 C140 120 150 150 190 165 C220 175 230 190 250 205"
-        fill="none"
-        stroke="var(--color-gold)"
-        strokeWidth="3"
-        strokeDasharray="2 12"
-        strokeLinecap="round"
-      />
-
-      {/* булавка «Лисья нора» */}
-      <g transform="translate(250,205)">
-        <path
-          d="M0 0 C-16 -16 -16 -34 0 -34 C16 -34 16 -16 0 0 Z"
-          fill="var(--color-fox)"
-        />
-        <circle cx="0" cy="-24" r="7" fill="var(--color-bg)" />
-      </g>
-
-      <text x="20" y="150" fill="var(--color-bg)" opacity="0.7" fontSize="13" fontFamily="Manrope, sans-serif">
-        Выборгский замок
-      </text>
-      <text x="196" y="240" fill="var(--color-bg)" fontSize="13" fontFamily="Manrope, sans-serif" fontWeight="700">
-        Краснофлотская, 4А
-      </text>
-    </svg>
-  )
-}
+// Leaflet — не маленькая библиотека, а карта находится ниже первого экрана,
+// поэтому грузим её отдельным чанком только тогда, когда она реально нужна.
+const StoreMap = lazy(() => import('./StoreMap').then((m) => ({ default: m.StoreMap })))
 
 export function Location() {
   const ref = useReveal<HTMLDivElement>()
@@ -107,10 +70,19 @@ export function Location() {
           </div>
 
           <div className="waymap">
-            <div aria-hidden="true">
-              <WaySketch />
-            </div>
-            <p className="waymap__caption">Схематично: от Выборгского замка — пара минут пешком до норы.</p>
+            <Suspense fallback={<div className="store-map__canvas store-map__canvas--loading" />}>
+              <StoreMap />
+            </Suspense>
+            <p className="waymap__caption">
+              От Выборгского замка — пара минут пешком.{' '}
+              <a
+                href={`https://yandex.ru/maps/?text=${mapQuery}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть в Яндекс Картах
+              </a>
+            </p>
           </div>
         </div>
       </div>

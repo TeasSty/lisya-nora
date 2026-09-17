@@ -1,46 +1,116 @@
 import { useReveal } from '../../lib/useReveal'
 
+function Shelf({ y }: { y: number }) {
+  return (
+    <g>
+      <rect x="16" y={y} width="284" height="16" rx="4" fill="url(#woodShelf)" />
+      <rect x="16" y={y + 16} width="284" height="6" fill="#241a13" opacity="0.35" />
+      <path
+        d={`M28 ${y + 4} h30 M96 ${y + 6} h44 M190 ${y + 4} h60`}
+        stroke="#5a3a22"
+        strokeWidth="1.4"
+        opacity="0.5"
+      />
+    </g>
+  )
+}
+
 function ShelfArt() {
   return (
-    <svg viewBox="0 0 320 300" role="img" aria-labelledby="shelf-art-title">
-      <title id="shelf-art-title">Полка с подарками и лисой рядом</title>
-      <rect x="20" y="70" width="280" height="14" rx="6" fill="var(--color-fox)" />
-      <rect x="20" y="170" width="280" height="14" rx="6" fill="var(--color-fox)" />
+    <svg viewBox="0 0 340 380" role="img" aria-labelledby="shelf-art-title">
+      <title id="shelf-art-title">
+        Полка с керамикой, кованой совой и куклой-зверушкой, рядом сидит лиса Лииса
+      </title>
+      <defs>
+        <linearGradient id="woodShelf" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a9663a" />
+          <stop offset="100%" stopColor="#7c4526" />
+        </linearGradient>
+        <linearGradient id="foxFurSide" x1="0.1" y1="0" x2="0.9" y2="1">
+          <stop offset="0%" stopColor="#d9743f" />
+          <stop offset="60%" stopColor="var(--color-fox)" />
+          <stop offset="100%" stopColor="#9c4a24" />
+        </linearGradient>
+      </defs>
 
-      {/* верхняя полка: часы + оберег */}
-      <circle cx="80" cy="46" r="22" fill="none" stroke="var(--color-ink)" strokeWidth="3.2" />
-      <path d="M80 46 L80 32 M80 46 L90 52" stroke="var(--color-ink)" strokeWidth="3.2" strokeLinecap="round" />
-      <path
-        d="M210 20 L216 32 L229 32 L219 40 L223 53 L210 45 L197 53 L201 40 L191 32 L204 32 Z"
-        fill="var(--color-gold)"
-      />
+      {/* тёплое пятно света у полок */}
+      <ellipse cx="150" cy="150" rx="150" ry="140" fill="var(--color-fox-tint)" opacity="0.35" />
 
-      {/* средняя полка: домик + ключ */}
-      <g transform="translate(70,120)" stroke="var(--color-ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M-16 30 L0 12 L16 30" />
-        <path d="M-10 28 L-10 46 L10 46 L10 28" />
-      </g>
-      <g transform="translate(220,132)" stroke="var(--color-ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="0" cy="0" r="10" />
-        <path d="M7 7 L28 28" />
-        <path d="M20 20 L26 14 M25 25 L31 19" />
-      </g>
+      <Shelf y={70} />
+      <Shelf y={190} />
 
-      {/* нижняя полка: Лииса сидит рядом */}
-      <g transform="translate(150,190) scale(2.4)">
-        <path d="M14 26 L22 4 L30 22 Z" fill="var(--color-fox)" />
-        <path d="M50 26 L42 4 L34 22 Z" fill="var(--color-fox)" />
+      {/* верхняя полка: керамическая всячница + оберег-подвеска */}
+      <g transform="translate(70,66)">
         <path
-          d="M32 14 C46 14 54 28 50 42 C47 54 38 58 32 58 C26 58 17 54 14 42 C10 28 18 14 32 14 Z"
+          d="M-22 0 C-22 -18 -10 -30 0 -30 C10 -30 22 -18 22 0 C22 6 18 10 12 10 L-12 10 C-18 10 -22 6 -22 0 Z"
           fill="var(--color-fox)"
         />
+        <ellipse cx="0" cy="-30" rx="9" ry="4" fill="var(--color-fox-dark)" />
+        <path d="M-14 -6 C-8 -2 8 -2 14 -6" stroke="#7a3a1c" strokeWidth="1.6" fill="none" opacity="0.6" />
+      </g>
+      <g transform="translate(245,58)" stroke="var(--color-ink)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M0 -20 L4 -6 L18 -6 L7 2 L11 16 L0 8 L-11 16 L-7 2 L-18 -6 L-4 -6 Z" fill="var(--color-gold)" stroke="var(--color-ink)" />
+      </g>
+
+      {/* средняя полка: кованая сова + кукла-зверушка */}
+      <g transform="translate(80,192)" stroke="var(--color-ink)" strokeWidth="2.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M-13 -20 C-15 -28 -13 -34 -8 -38 C-8 -30 -7 -24 -6 -18 Z" fill="var(--color-fox)" stroke="none" />
+        <path d="M13 -20 C15 -28 13 -34 8 -38 C8 -30 7 -24 6 -18 Z" fill="var(--color-fox)" stroke="none" />
+        <path d="M0 -22 C16 -22 24 -8 22 6 C20 20 10 28 0 28 C-10 28 -20 20 -22 6 C-24 -8 -16 -22 0 -22 Z" fill="var(--color-fox-tint)" />
+        <circle cx="-7" cy="-2" r="5" fill="var(--color-paper)" />
+        <circle cx="7" cy="-2" r="5" fill="var(--color-paper)" />
+        <circle cx="-7" cy="-2" r="2.2" fill="var(--color-ink)" stroke="none" />
+        <circle cx="7" cy="-2" r="2.2" fill="var(--color-ink)" stroke="none" />
+        <path d="M0 4 L-4 10 L4 10 Z" fill="var(--color-gold)" />
+      </g>
+      <g transform="translate(232,196)">
         <path
-          d="M32 34 C40 34 44 42 41 50 C39 55 35 57 32 57 C29 57 25 55 23 50 C20 42 24 34 32 34 Z"
+          d="M0 -18 C14 -18 22 -6 20 8 C18 22 10 30 0 30 C-10 30 -18 22 -20 8 C-22 -6 -14 -18 0 -18 Z"
+          fill="#c7a173"
+        />
+        <circle cx="-13" cy="-14" r="6" fill="#c7a173" />
+        <circle cx="13" cy="-14" r="6" fill="#c7a173" />
+        <circle cx="-6" cy="-2" r="2" fill="var(--color-ink)" />
+        <circle cx="6" cy="-2" r="2" fill="var(--color-ink)" />
+        <path d="M-4 8 C-1 11 1 11 4 8" stroke="var(--color-ink)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      </g>
+
+      {/* Лииса сидит у полок */}
+      <g transform="translate(150,300)">
+        {/* хвост */}
+        <path
+          d="M50 40 C86 30 96 -6 76 -22 C92 -10 92 24 60 44 Z"
+          fill="url(#foxFurSide)"
+        />
+        <path d="M78 -14 C84 -6 84 10 70 22" stroke="var(--color-fox-tint)" strokeWidth="6" fill="none" strokeLinecap="round" opacity="0.7" />
+        {/* тело (сидит) */}
+        <path
+          d="M-46 46 C-52 6 -30 -30 0 -30 C30 -30 52 6 46 46 C40 62 -40 62 -46 46 Z"
+          fill="url(#foxFurSide)"
+        />
+        {/* уши */}
+        <path d="M-26 -34 C-30 -54 -26 -70 -14 -80 C-12 -62 -10 -46 -6 -32 Z" fill="url(#foxFurSide)" />
+        <path d="M26 -34 C30 -54 26 -70 14 -80 C12 -62 10 -46 6 -32 Z" fill="url(#foxFurSide)" />
+        <path d="M-21 -40 C-22 -54 -20 -64 -13 -71 C-13 -60 -12 -48 -10 -38 Z" fill="var(--color-fox-tint)" />
+        <path d="M21 -40 C22 -54 20 -64 13 -71 C13 -60 12 -48 10 -38 Z" fill="var(--color-fox-tint)" />
+        {/* голова */}
+        <path
+          d="M0 -36 C22 -36 34 -18 33 2 C32 20 20 34 0 34 C-20 34 -32 20 -33 2 C-34 -18 -22 -36 0 -36 Z"
+          fill="url(#foxFurSide)"
+        />
+        {/* мордочка */}
+        <path
+          d="M0 -6 C13 -6 20 4 19 14 C18 24 10 32 0 32 C-10 32 -18 24 -19 14 C-20 4 -13 -6 0 -6 Z"
           fill="var(--color-fox-tint)"
         />
-        <circle cx="24" cy="32" r="2.6" fill="#2b2019" />
-        <circle cx="40" cy="32" r="2.6" fill="#2b2019" />
-        <path d="M32 46 L28 50 L36 50 Z" fill="#2b2019" />
+        {/* глаза */}
+        <path d="M-14 -8 C-11 -12 -4 -12 -2 -8 C-6 -5 -11 -5 -14 -8 Z" fill="#2b2019" />
+        <path d="M14 -8 C11 -12 4 -12 2 -8 C6 -5 11 -5 14 -8 Z" fill="#2b2019" />
+        <circle cx="-9" cy="-9" r="1.1" fill="#fbf3e4" />
+        <circle cx="9" cy="-9" r="1.1" fill="#fbf3e4" />
+        {/* нос и рот */}
+        <path d="M-3 8 L0 3 L3 8 L0 11 Z" fill="#2b2019" />
+        <path d="M0 11 L0 15 M0 15 C-4 18 -6 18 -9 16 M0 15 C4 18 6 18 9 16" stroke="#2b2019" strokeWidth="1.6" fill="none" strokeLinecap="round" />
       </g>
     </svg>
   )

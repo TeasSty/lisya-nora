@@ -15,6 +15,7 @@ const EMPTY_FORM: ProductInput = {
   description: '',
   category: 'jewelry',
   imageUrl: '',
+  priceRub: null,
   isActive: true,
   sortOrder: 0,
 }
@@ -52,6 +53,7 @@ export function ProductsPanel() {
       description: product.description,
       category: product.category,
       imageUrl: product.imageUrl ?? '',
+      priceRub: product.priceRub,
       isActive: product.isActive,
       sortOrder: product.sortOrder,
     })
@@ -148,6 +150,17 @@ export function ProductsPanel() {
                   onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
                 />
               </div>
+            </div>
+
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="p-price">Цена, ₽ (необязательно — оставьте пустым, если цена уточняется)</label>
+              <input
+                id="p-price"
+                type="number"
+                min="0"
+                value={form.priceRub ?? ''}
+                onChange={(e) => setForm({ ...form, priceRub: e.target.value === '' ? null : Number(e.target.value) })}
+              />
             </div>
 
             <div className="form-field" style={{ margin: 0 }}>

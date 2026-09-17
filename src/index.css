@@ -10,6 +10,7 @@
   --color-ink-soft: #5a4a3c;
   --color-fox: #c1552a;
   --color-fox-dark: #96421f;
+  --color-fox-deep: #7a3418;
   --color-fox-tint: #f0d9c6;
   --color-forest: #33503f;
   --color-forest-dark: #23372a;
@@ -185,13 +186,14 @@ ul {
 }
 
 .btn-primary {
-  background: var(--color-fox);
+  /* var(--color-fox-dark), а не --color-fox — так держится контраст 4.5:1 с текстом */
+  background: var(--color-fox-dark);
   color: var(--color-paper);
   box-shadow: var(--shadow-card);
 }
 
 .btn-primary:hover {
-  background: var(--color-fox-dark);
+  background: var(--color-fox-deep);
   box-shadow: var(--shadow-pop);
 }
 

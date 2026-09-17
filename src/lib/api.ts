@@ -92,6 +92,7 @@ export interface ProductInput {
   description: string
   category: ProductCategory
   imageUrl: string
+  priceRub: number | null
   isActive: boolean
   sortOrder: number
 }

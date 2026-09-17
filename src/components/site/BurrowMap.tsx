@@ -4,12 +4,12 @@ import { FoxMark } from './FoxMark'
 
 export type RoomId = ProductCategory | 'all'
 
-type BurrowRoomId = 'all' | 'jewelry' | 'watches' | 'curiosities' | 'charms' | 'decor'
+type BurrowRoomId = 'all' | 'jewelry' | 'forge' | 'curiosities' | 'charms' | 'decor'
 
 const ROOMS: { id: BurrowRoomId; title: string; short: string }[] = [
   { id: 'all', title: 'Весь магазин', short: 'посмотреть всё сразу' },
   { id: 'jewelry', title: CATEGORY_META.jewelry.room, short: CATEGORY_META.jewelry.short },
-  { id: 'watches', title: CATEGORY_META.watches.room, short: CATEGORY_META.watches.short },
+  { id: 'forge', title: CATEGORY_META.forge.room, short: CATEGORY_META.forge.short },
   { id: 'curiosities', title: CATEGORY_META.curiosities.room, short: CATEGORY_META.curiosities.short },
   { id: 'charms', title: CATEGORY_META.charms.room, short: CATEGORY_META.charms.short },
   { id: 'decor', title: CATEGORY_META.decor.room, short: CATEGORY_META.decor.short },
@@ -19,7 +19,7 @@ const ROOMS: { id: BurrowRoomId; title: string; short: string }[] = [
 const NODE_POSITION: Record<BurrowRoomId, { left: number; top: number }> = {
   all: { left: 6, top: 50 },
   jewelry: { left: 22, top: 20 },
-  watches: { left: 38, top: 78 },
+  forge: { left: 38, top: 78 },
   curiosities: { left: 54, top: 18 },
   charms: { left: 70, top: 78 },
   decor: { left: 90, top: 45 },

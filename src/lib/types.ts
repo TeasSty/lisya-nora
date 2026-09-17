@@ -6,6 +6,8 @@ export interface Product {
   description: string
   category: ProductCategory
   imageUrl: string | null
+  /** Цена в рублях — только если она реально указана продавцом, иначе null. */
+  priceRub: number | null
 }
 
 export interface AdminProduct extends Product {

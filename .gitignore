@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+tmp_raw_images
+
+# Скриншоты для проверки/отчётов (не часть сайта)
+/*.png
+
 # Cloudflare / Wrangler
 .wrangler
 .dev.vars
