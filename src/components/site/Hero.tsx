@@ -59,17 +59,6 @@ function HeroStage() {
           <circle cx="14" cy="12" r="1" fill="currentColor" stroke="none" />
         </svg>
       </CategoryBadge>
-
-      <p className="hero-den__credit">
-        Фото:{' '}
-        <a
-          href="https://unsplash.com/photos/a-close-up-of-a-red-foxs-face-DUXOafpG6To"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Frida Lannerström / Unsplash
-        </a>
-      </p>
     </div>
   )
 }
