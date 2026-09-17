@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { DEMO_MODE } from '../../lib/config'
 import { FoxMark } from './FoxMark'
 
 export function Footer() {
@@ -30,7 +31,7 @@ export function Footer() {
 
         <div className="site-footer__bottom">
           <span>© {new Date().getFullYear()} «Лисья нора» · магазин уникальных подарков</span>
-          <Link to="/admin">Вход для сотрудников</Link>
+          {!DEMO_MODE && <Link to="/admin">Вход для сотрудников</Link>}
         </div>
       </div>
     </footer>

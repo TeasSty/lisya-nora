@@ -15,6 +15,7 @@ export function AdminLogin() {
       .then((res) => {
         if (res.authenticated) navigate('/admin/dashboard', { replace: true })
       })
+      .catch(() => undefined)
       .finally(() => setCheckingSession(false))
   }, [navigate])
 

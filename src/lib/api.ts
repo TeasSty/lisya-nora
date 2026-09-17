@@ -1,7 +1,14 @@
 import type { ProductCategory } from './categories'
+import { DEMO_MODE } from './config'
+import { DEMO_PRODUCTS } from '../data/demoProducts'
 import type { AdminOrder, AdminProduct, Product } from './types'
 
 class ApiError extends Error {}
+
+/** Небольшая задержка, чтобы состояния загрузки/отправки выглядели естественно в демо-режиме. */
+function demoDelay<T>(value: T, ms = 500): Promise<T> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms))
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
@@ -25,6 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export { ApiError }
 
 export function fetchProducts(): Promise<{ products: Product[] }> {
+  if (DEMO_MODE) return demoDelay({ products: DEMO_PRODUCTS }, 350)
   return request('/api/products')
 }
 
@@ -37,6 +45,12 @@ export interface OrderPayload {
 }
 
 export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
+  if (DEMO_MODE) {
+    // Демо-этап: заявка не сохраняется на сервере, показываем только UX отправки.
+    // Реальное сохранение появится вместе с панелью администратора (см. README).
+    console.info('[демо] заявка получена (без сохранения на сервере):', payload)
+    return demoDelay({ ok: true as const }, 700)
+  }
   return request('/api/orders', {
     method: 'POST',
     body: JSON.stringify(payload),

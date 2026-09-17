@@ -5,7 +5,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<PublicSite />} />
         <Route path="/admin" element={<AdminLogin />} />
