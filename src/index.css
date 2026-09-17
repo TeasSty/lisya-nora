@@ -56,7 +56,8 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  overflow-x: hidden;
+  /* clip не ломает position: sticky у шапки, в отличие от overflow-x: hidden */
+  overflow-x: clip;
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
@@ -65,8 +66,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.nav-open {
+  overflow: hidden;
+}
+
 #root {
-  overflow-x: hidden;
+  /* не ставим overflow здесь — иначе sticky-шапка перестаёт «ходить» со скроллом */
+  min-height: 100vh;
+}
+
+[id] {
+  scroll-margin-top: 88px;
 }
 
 img,

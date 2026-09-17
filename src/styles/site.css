@@ -73,8 +73,10 @@
 
 .site-header__menu-btn {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   width: 42px;
   height: 42px;
   border-radius: 12px;
@@ -84,20 +86,26 @@
   flex-shrink: 0;
 }
 
-.site-header__menu-btn span,
-.site-header__menu-btn::before,
-.site-header__menu-btn::after {
-  content: '';
+.site-header__menu-btn span {
   display: block;
   width: 18px;
   height: 2px;
   background: var(--color-ink);
-  position: relative;
+  border-radius: 1px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  transform-origin: center;
 }
 
-.site-header__menu-btn {
-  flex-direction: column;
-  gap: 4px;
+.site-header__menu-btn.is-open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.site-header__menu-btn.is-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.site-header__menu-btn.is-open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 .site-mobile-nav {
@@ -241,9 +249,115 @@
   z-index: 1;
 }
 
-.hero__stage svg {
-  width: 100%;
-  max-width: 420px;
+.hero-den {
+  position: relative;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding: 8px 12px 28px;
+}
+
+.hero-den__arch {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 52% 52% 18% 18% / 42% 42% 18% 18%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 28%, #ffe9c9 0%, transparent 42%),
+    linear-gradient(180deg, #3c5c48 0%, var(--color-forest-dark) 100%);
+  box-shadow:
+    inset 0 0 0 14px #2c4636,
+    inset 0 0 0 22px rgba(251, 243, 228, 0.18),
+    0 28px 50px -28px rgba(43, 32, 25, 0.55);
+}
+
+.hero-den__glow {
+  position: absolute;
+  inset: 18% 16% 0;
+  border-radius: 48% 48% 12% 12% / 36% 36% 12% 12%;
+  background: radial-gradient(circle at 50% 20%, #ffe9c9 0%, #caa06f 55%, transparent 78%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-den__photo {
+  position: absolute;
+  inset: 10% 8% 0;
+  width: 84%;
+  height: 90%;
+  object-fit: cover;
+  object-position: center 18%;
+  border-radius: 48% 48% 14% 14% / 36% 36% 12% 12%;
+  z-index: 2;
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.hero-den__rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 -40px 50px -20px rgba(35, 55, 42, 0.55);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hero-den__badge {
+  position: absolute;
+  z-index: 4;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-paper);
+  border: 3px solid var(--color-paper);
+  box-shadow: 0 10px 24px -12px rgba(43, 32, 25, 0.5);
+  color: var(--color-ink);
+}
+
+.hero-den__badge svg {
+  width: 24px;
+  height: 24px;
+}
+
+.hero-den__badge--tl {
+  top: 12%;
+  left: 0;
+  background: var(--color-fox-tint);
+  transform: rotate(-8deg);
+}
+
+.hero-den__badge--tr {
+  top: 8%;
+  right: 0;
+  background: #dee2cd;
+  transform: rotate(6deg);
+}
+
+.hero-den__badge--bl {
+  bottom: 22%;
+  left: 0;
+  background: #e4ddc3;
+  transform: rotate(-4deg);
+}
+
+.hero-den__badge--br {
+  bottom: 18%;
+  right: 0;
+  background: #e6d7c2;
+  transform: rotate(5deg);
+}
+
+.hero-den__credit {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.hero-den__credit a {
+  color: inherit;
+  text-underline-offset: 2px;
 }
 
 @media (min-width: 900px) {
@@ -791,6 +905,27 @@
 
 .about__art {
   order: -1;
+  position: relative;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.about__portrait {
+  width: min(100%, 280px);
+  aspect-ratio: 4 / 5;
+  border-radius: 28px 28px 40% 40%;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  border: 4px solid var(--color-paper);
+  background: var(--color-forest-dark);
+}
+
+.about__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
 }
 
 .about__art svg {

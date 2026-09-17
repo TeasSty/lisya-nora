@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FoxMark } from './FoxMark'
 
 const NAV_LINKS = [
@@ -10,6 +10,22 @@ const NAV_LINKS = [
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.body.classList.add('nav-open')
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.classList.remove('nav-open')
+    }
+  }, [isOpen])
 
   return (
     <header className="site-header">
@@ -33,20 +49,20 @@ export function Header() {
           </a>
           <button
             type="button"
-            className="site-header__menu-btn"
+            className={`site-header__menu-btn${isOpen ? ' is-open' : ''}`}
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? 'Закрыть меню' : 'Открыть меню'}
             onClick={() => setIsOpen((v) => !v)}
           >
-            <span style={{ transform: isOpen ? 'translateY(6px) rotate(45deg)' : 'none' }} />
-            <span style={{ opacity: isOpen ? 0 : 1 }} />
-            <span style={{ transform: isOpen ? 'translateY(-6px) rotate(-45deg)' : 'none' }} />
+            <span />
+            <span />
+            <span />
           </button>
         </div>
       </div>
 
-      <nav id="mobile-nav" className={`site-mobile-nav ${isOpen ? 'is-open' : ''}`}>
+      <nav id="mobile-nav" className={`site-mobile-nav${isOpen ? ' is-open' : ''}`}>
         <ul className="site-mobile-nav__list">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>

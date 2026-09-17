@@ -57,6 +57,7 @@ Workers + D1 (инструкция ниже, раздел «Деплой backend
 │   ├── lib/                  API-клиент, категории, типы, хук useReveal
 │   └── styles/                CSS публичного сайта и админки
 ├── public/images/products/  Оптимизированные фото товаров (WebP, локально)
+├── public/images/fox-liisa.webp  Фото рыжей лисы (Frida Lannerström / Unsplash License)
 ├── scripts/optimize-images.mjs  Ресайз + конвертация фото в WebP (sharp)
 ├── worker/                   Backend (Cloudflare Worker, Hono)
 │   ├── index.ts               Все API-маршруты
@@ -217,3 +218,11 @@ npm run deploy
 Репозиторий инициализирован, есть `.gitignore` (исключены `node_modules`, `dist`,
 `.wrangler`, `.dev.vars` и любые `.env*` — секреты не попадают в git). Проверьте перед
 пушем, что вы не коммитите свои личные `.dev.vars` с настоящими паролями.
+
+## Атрибуция
+
+Фото рыжей лисы на первом экране и в блоке «О магазине»:
+[Frida Lannerström](https://unsplash.com/@fridalannerstrom) —
+[«a close up of a red fox's face»](https://unsplash.com/photos/a-close-up-of-a-red-foxs-face-DUXOafpG6To),
+лицензия [Unsplash License](https://unsplash.com/license) (коммерческое использование разрешено).
+Локальная копия: `public/images/fox-liisa.webp` (~57 КБ).
