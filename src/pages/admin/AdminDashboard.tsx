@@ -4,7 +4,6 @@ import { OrdersPanel } from '../../components/admin/OrdersPanel'
 import { ProductsPanel } from '../../components/admin/ProductsPanel'
 import { FoxMark } from '../../components/site/FoxMark'
 import { adminLogout, adminSession } from '../../lib/api'
-import { DEMO_MODE } from '../../lib/config'
 
 type Tab = 'orders' | 'products'
 
@@ -59,15 +58,7 @@ export function AdminDashboard() {
         <div className="admin-intro">
           <span className="eyebrow">Рабочая нора</span>
           <h1>Заявки и каталог</h1>
-          <p>Простая панель без доставки: смотрите заявки с сайта и сами обновляйте товары на витрине.</p>
         </div>
-
-        {DEMO_MODE && (
-          <div className="admin-banner" role="status">
-            Демо-режим: данные хранятся в этом браузере. После подключения базы на сервере заявки и товары
-            будут общими для всех устройств.
-          </div>
-        )}
 
         <div className="admin-tabs" role="tablist" aria-label="Разделы панели">
           <button

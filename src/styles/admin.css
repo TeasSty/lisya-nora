@@ -80,14 +80,7 @@
   font-family: var(--font-display);
   font-size: clamp(26px, 5vw, 34px);
   line-height: 1.15;
-  margin: 0 0 8px;
-}
-
-.admin-intro p {
   margin: 0;
-  color: var(--color-ink-soft);
-  font-size: 15px;
-  max-width: 42rem;
 }
 
 .admin-tabs {
@@ -173,22 +166,6 @@
   font-family: var(--font-display);
   font-size: 18px;
   margin-bottom: 6px;
-}
-
-.admin-banner {
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-line);
-  background: var(--color-fox-tint);
-  color: var(--color-fox-deep);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.admin-banner code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
 }
 
 /* Заявки */
