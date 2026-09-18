@@ -1,12 +1,29 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useCart } from '../../lib/cart'
 
 const PRICE_FORMATTER = new Intl.NumberFormat('ru-RU')
+const ANIMATION_MS = 280
 
 export function CartDrawer() {
   const { items, isOpen, closeCart, removeProduct, clear, openCheckout, count } = useCart()
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  const [mounted, setMounted] = useState(isOpen)
+  const [visible, setVisible] = useState(isOpen)
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true)
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true))
+      })
+      return () => cancelAnimationFrame(frame)
+    }
+
+    setVisible(false)
+    const timer = window.setTimeout(() => setMounted(false), ANIMATION_MS)
+    return () => window.clearTimeout(timer)
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -49,17 +66,17 @@ export function CartDrawer() {
     }
   }, [isOpen, closeCart])
 
-  if (!isOpen) return null
+  if (!mounted) return null
 
   return (
     <div
-      className="cart-overlay"
+      className={`cart-overlay${visible ? ' is-open' : ''}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) closeCart()
       }}
     >
       <div
-        className="cart-drawer"
+        className={`cart-drawer${visible ? ' is-open' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

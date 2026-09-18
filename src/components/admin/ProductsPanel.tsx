@@ -120,10 +120,11 @@ export function ProductsPanel() {
 
     setIsSaving(true)
     try {
+      const payload = { ...form, isActive: true }
       if (editingId === 'new') {
-        await createAdminProduct(form)
+        await createAdminProduct(payload)
       } else if (typeof editingId === 'number') {
-        await updateAdminProduct(editingId, form)
+        await updateAdminProduct(editingId, payload)
       }
       setEditingId(null)
       setShowUrlField(false)
@@ -268,15 +269,6 @@ export function ProductsPanel() {
               )}
             </div>
 
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-              />
-              Показывать на сайте
-            </label>
-
             {formError && (
               <p className="form-error" role="alert">
                 {formError}
@@ -330,10 +322,7 @@ export function ProductsPanel() {
                 )}
                 <div className="product-row__body">
                   <div className="product-row__info">
-                    <strong>
-                      {product.name}
-                      {!product.isActive && <span className="product-row__badge">скрыт</span>}
-                    </strong>
+                    <strong>{product.name}</strong>
                     <span>
                       {CATEGORY_META[product.category].label} · {formatPrice(product.priceRub)}
                     </span>

@@ -905,6 +905,12 @@
   justify-content: flex-end;
   z-index: 300;
   backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.cart-overlay.is-open {
+  opacity: 1;
 }
 
 .cart-drawer {
@@ -918,6 +924,20 @@
   gap: 16px;
   overflow-y: auto;
   position: relative;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  will-change: transform;
+}
+
+.cart-drawer.is-open {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-overlay,
+  .cart-drawer {
+    transition: none;
+  }
 }
 
 .cart-drawer__head {
