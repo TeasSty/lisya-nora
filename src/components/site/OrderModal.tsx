@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, submitOrder } from '../../lib/api'
+import { ApiError, searchOzonPvz, submitOrder, type OzonPvzSearchResponse } from '../../lib/api'
 import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import {
+  formatPickupPointSelection,
   isCompleteAddress,
   isCompletePickupPoint,
   OZON_PVZ_MAP_URL,
+  type OzonPvzPoint,
 } from '../../lib/ozonShipment'
 import type { Product } from '../../lib/types'
 
@@ -20,6 +22,10 @@ interface OrderModalProps {
   onSuccess?: () => void
 }
 
+type PvzMode = 'api' | 'map' | 'idle'
+
+const CONSENT_ERROR = 'Нужно согласие на обработку персональных данных'
+
 export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -29,6 +35,11 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [comment, setComment] = useState('')
   const [consent, setConsent] = useState(false)
   const [pvzPickerOpen, setPvzPickerOpen] = useState(false)
+  const [pvzMode, setPvzMode] = useState<PvzMode>('idle')
+  const [pvzQuery, setPvzQuery] = useState('')
+  const [pvzPoints, setPvzPoints] = useState<OzonPvzPoint[]>([])
+  const [pvzLoading, setPvzLoading] = useState(false)
+  const [pvzHint, setPvzHint] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done'>('idle')
   const panelRef = useRef<HTMLDivElement>(null)
@@ -80,6 +91,84 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     }
   }, [onClose, pvzPickerOpen])
 
+  async function openPvzPicker() {
+    setPvzPickerOpen(true)
+    setPvzMode('idle')
+    setPvzHint(null)
+    setPvzPoints([])
+    const initialCity = city.trim()
+    setPvzQuery(initialCity)
+    if (initialCity.length >= 2) {
+      await runPvzSearch(initialCity)
+    }
+  }
+
+  async function runPvzSearch(rawCity: string) {
+    const query = rawCity.trim()
+    if (query.length < 2) {
+      setPvzHint('Введите город — минимум 2 буквы')
+      setPvzPoints([])
+      setPvzMode('idle')
+      return
+    }
+
+    setPvzLoading(true)
+    setPvzHint(null)
+    try {
+      const result: OzonPvzSearchResponse = await searchOzonPvz(query)
+      if (!result.configured || result.code === 'not_configured') {
+        setPvzMode('map')
+        setPvzPoints([])
+        setPvzHint(
+          result.message ??
+            'Список ПВЗ через API пока не подключён. Выберите пункт на карте Ozon и вставьте адрес.',
+        )
+        return
+      }
+
+      if (result.warming) {
+        setPvzMode('map')
+        setPvzPoints([])
+        setPvzHint(
+          result.message ??
+            'Каталог пунктов Ozon обновляется. Можно подождать минуту или выбрать на карте.',
+        )
+        return
+      }
+
+      if (result.error && result.points.length === 0) {
+        setPvzMode('map')
+        setPvzPoints([])
+        setPvzHint(result.error)
+        return
+      }
+
+      setPvzMode('api')
+      setPvzPoints(result.points)
+      setPvzHint(
+        result.points.length === 0
+          ? `В городе «${query}» пунктов не найдено. Проверьте написание или откройте карту Ozon.`
+          : null,
+      )
+    } catch (err) {
+      setPvzMode('map')
+      setPvzPoints([])
+      setPvzHint(err instanceof ApiError ? err.message : 'Не удалось загрузить список ПВЗ')
+    } finally {
+      setPvzLoading(false)
+    }
+  }
+
+  function selectPvzPoint(point: OzonPvzPoint) {
+    setPickupPoint(formatPickupPointSelection(point))
+    if (!city.trim()) {
+      // Город из адреса ПВЗ — первая часть до запятой, если поле пустое
+      const fromAddress = point.address.split(',')[0]?.trim()
+      if (fromAddress) setCity(fromAddress)
+    }
+    setPvzPickerOpen(false)
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
@@ -101,7 +190,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
       return
     }
     if (!isCompletePickupPoint(pickupPoint)) {
-      setError('Выберите пункт выдачи Ozon на карте и вставьте его полный адрес')
+      setError('Выберите пункт выдачи Ozon из списка или укажите его полный адрес')
       return
     }
     if (products.length === 0) {
@@ -109,7 +198,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
       return
     }
     if (!consent) {
-      setError('Нужно согласие на обработку персональных данных')
+      setError(CONSENT_ERROR)
       return
     }
 
@@ -151,12 +240,13 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
             </svg>
             <h3 id={titleId}>Заявка отправлена</h3>
             <p>
-              Перезвоним на {phone} {MERCHANT.responsePromise} ({MERCHANT.hours}). Отправку через Ozon
-              оформим по выбранному пункту выдачи. При необходимости можно забрать самовывозом:{' '}
-              {MERCHANT.addressShort}.
+              Перезвоним на {phone} {MERCHANT.responsePromise} ({MERCHANT.hours}).
+            </p>
+            <p className="form-success__soft">
+              Доставка Ozon по выбранному ПВЗ или самовывоз: {MERCHANT.addressShort}.
             </p>
             <p>
-              Срочно — звоните:{' '}
+              Срочно —{' '}
               <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>.
             </p>
             <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 16 }} onClick={onClose}>
@@ -188,7 +278,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
               </ul>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div className="form-field">
                 <label htmlFor="order-name">Ваше имя</label>
                 <input
@@ -196,8 +286,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   type="text"
                   autoComplete="name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setName(e.target.value)
+                    if (error) setError(null)
+                  }}
                 />
               </div>
 
@@ -209,8 +301,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   autoComplete="tel"
                   placeholder="+7 900 000-00-00"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setPhone(e.target.value)
+                    if (error) setError(null)
+                  }}
                 />
               </div>
 
@@ -222,8 +316,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   autoComplete="address-level2"
                   placeholder="Например: Мурманск"
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setCity(e.target.value)
+                    if (error) setError(null)
+                  }}
                 />
               </div>
 
@@ -235,8 +331,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   autoComplete="street-address"
                   placeholder="ул. Ленина, д. 12, кв. 5"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setAddress(e.target.value)
+                    if (error) setError(null)
+                  }}
                 />
                 <p className="field-hint">Нужен полный адрес — без номера дома заявку не отправим.</p>
               </div>
@@ -246,14 +344,16 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 <textarea
                   id="order-pvz"
                   rows={3}
-                  placeholder="Полный адрес ПВЗ из карты Ozon"
+                  placeholder="Выберите ПВЗ из списка или вставьте адрес с карты Ozon"
                   value={pickupPoint}
-                  onChange={(e) => setPickupPoint(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setPickupPoint(e.target.value)
+                    if (error) setError(null)
+                  }}
                 />
                 <div className="pvz-actions">
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPvzPickerOpen(true)}>
-                    Выбрать на карте Ozon
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void openPvzPicker()}>
+                    Выбрать пункт Ozon
                   </button>
                   {pickupPoint.trim() && (
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPickupPoint('')}>
@@ -262,7 +362,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   )}
                 </div>
                 <p className="field-hint">
-                  Откроется карта Ozon — выберите ПВЗ и вставьте сюда его адрес целиком.
+                  Сначала поиск по городу через API Ozon; если список недоступен — карта на ozon.ru.
                 </p>
               </div>
 
@@ -276,23 +376,34 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 />
               </div>
 
-              <label className="consent-field" htmlFor={consentId}>
-                <input
-                  id={consentId}
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  required
-                />
-                <span>
-                  Согласен(на) на обработку персональных данных по{' '}
-                  <Link to="/privacy" target="_blank" rel="noreferrer">
-                    политике
-                  </Link>
-                </span>
-              </label>
+              <div className={`consent-block${error === CONSENT_ERROR ? ' is-invalid' : ''}`}>
+                <label className="consent-field" htmlFor={consentId}>
+                  <input
+                    id={consentId}
+                    type="checkbox"
+                    checked={consent}
+                    aria-invalid={error === CONSENT_ERROR}
+                    aria-describedby={error === CONSENT_ERROR ? `${consentId}-error` : undefined}
+                    onChange={(e) => {
+                      setConsent(e.target.checked)
+                      if (error) setError(null)
+                    }}
+                  />
+                  <span>
+                    Согласен(на) на обработку персональных данных по{' '}
+                    <Link to="/privacy" target="_blank" rel="noreferrer">
+                      политике
+                    </Link>
+                  </span>
+                </label>
+                {error === CONSENT_ERROR && (
+                  <p className="form-error form-error--consent" id={`${consentId}-error`} role="alert">
+                    {error}
+                  </p>
+                )}
+              </div>
 
-              {error && (
+              {error && error !== CONSENT_ERROR && (
                 <p className="form-error" role="alert">
                   {error}
                 </p>
@@ -325,45 +436,88 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
             >
               ×
             </button>
-            <h3 id="pvz-picker-title">Пункт выдачи на карте Ozon</h3>
-            <ol className="pvz-picker__steps">
-              <li>Откройте официальную карту пунктов Ozon.</li>
-              <li>Найдите нужный ПВЗ или постамат в своём городе.</li>
-              <li>Скопируйте полный адрес точки и вставьте в поле ниже.</li>
-            </ol>
-            <a
-              className="btn btn-primary"
-              href={OZON_PVZ_MAP_URL}
-              target="_blank"
-              rel="noreferrer"
-              style={{ width: '100%', marginBottom: 14 }}
-            >
-              Открыть карту Ozon
-            </a>
-            <div className="form-field" style={{ marginBottom: 12 }}>
-              <label htmlFor="pvz-paste">Адрес выбранного ПВЗ</label>
-              <textarea
-                id="pvz-paste"
-                rows={3}
-                placeholder="Вставьте сюда адрес с карты Ozon"
-                value={pickupPoint}
-                onChange={(e) => setPickupPoint(e.target.value)}
-                autoFocus
-              />
+            <h3 id="pvz-picker-title">Пункт выдачи Ozon</h3>
+
+            <div className="pvz-picker__search">
+              <div className="form-field" style={{ marginBottom: 0, flex: 1 }}>
+                <label htmlFor="pvz-city-search">Город</label>
+                <input
+                  id="pvz-city-search"
+                  type="text"
+                  value={pvzQuery}
+                  onChange={(e) => setPvzQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void runPvzSearch(pvzQuery)
+                    }
+                  }}
+                  placeholder="Например: Выборг"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={pvzLoading}
+                onClick={() => void runPvzSearch(pvzQuery)}
+              >
+                {pvzLoading ? 'Ищем…' : 'Найти'}
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              disabled={!isCompletePickupPoint(pickupPoint)}
-              onClick={() => setPvzPickerOpen(false)}
-            >
-              Подтвердить пункт
-            </button>
-            <p className="field-hint" style={{ marginTop: 10 }}>
-              Саму карту Ozon встроить в сайт нельзя — точки принадлежат их системе. Поэтому выбор
-              идёт на ozon.ru, а сюда попадает готовый адрес.
-            </p>
+
+            {pvzHint && (
+              <p className="field-hint" role="status" style={{ marginTop: 10 }}>
+                {pvzHint}
+              </p>
+            )}
+
+            {pvzMode === 'api' && pvzPoints.length > 0 && (
+              <ul className="pvz-picker__list" aria-label="Найденные пункты выдачи">
+                {pvzPoints.map((point) => (
+                  <li key={point.id}>
+                    <button type="button" className="pvz-picker__item" onClick={() => selectPvzPoint(point)}>
+                      <span className="pvz-picker__item-name">{point.name}</span>
+                      <span className="pvz-picker__item-address">{point.address}</span>
+                      <span className="pvz-picker__item-meta">
+                        #{point.id}
+                        {point.type ? ` · ${point.type}` : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="pvz-picker__fallback">
+              <a
+                className="btn btn-ghost btn-sm"
+                href={OZON_PVZ_MAP_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть карту Ozon
+              </a>
+              <div className="form-field" style={{ marginBottom: 0, marginTop: 10 }}>
+                <label htmlFor="pvz-paste">Или вставьте адрес с карты</label>
+                <textarea
+                  id="pvz-paste"
+                  rows={2}
+                  placeholder="Полный адрес ПВЗ с ozon.ru/info/map"
+                  value={pickupPoint}
+                  onChange={(e) => setPickupPoint(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: 12 }}
+                disabled={!isCompletePickupPoint(pickupPoint)}
+                onClick={() => setPvzPickerOpen(false)}
+              >
+                Подтвердить пункт
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -201,6 +201,12 @@ npm run db:migrate:remote
 npx wrangler secret put ADMIN_PASSWORD
 npx wrangler secret put SESSION_SECRET
 
+# Опционально: список ПВЗ через Ozon Delivery for Business API
+# (не Seller Api-Key — отдельный кабинет «Ozon Доставка», Client ID + Client Secret)
+# Документация: https://docs.ozon.ru/api/ozon-delivery/
+npx wrangler secret put OZON_DELIVERY_CLIENT_ID
+npx wrangler secret put OZON_DELIVERY_CLIENT_SECRET
+
 # 5. Собрать и опубликовать
 npm run deploy
 ```

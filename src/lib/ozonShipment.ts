@@ -3,8 +3,27 @@ import type { AdminOrder } from './types'
 
 const PRICE_FORMATTER = new Intl.NumberFormat('ru-RU')
 
-/** Официальная карта пунктов выдачи Ozon. */
+/** Официальная карта пунктов выдачи Ozon (fallback, если Delivery API не подключён). */
 export const OZON_PVZ_MAP_URL = 'https://www.ozon.ru/info/map/'
+
+/** Публичная точка из Worker-прокси `/api/ozon/pvz`. */
+export interface OzonPvzPoint {
+  id: number
+  name: string
+  address: string
+  type: string
+  isActive: boolean
+  lat: number | null
+  lon: number | null
+}
+
+/** Сохраняем в заявку: id (если есть) + название + адрес. */
+export function formatPickupPointSelection(point: Pick<OzonPvzPoint, 'id' | 'name' | 'address'>): string {
+  const name = point.name.trim()
+  const address = point.address.trim()
+  const label = name && !address.includes(name) ? `${name} · ${address}` : address
+  return `#${point.id} · ${label}`
+}
 
 export function isCompleteAddress(value: string): boolean {
   const text = value.trim()

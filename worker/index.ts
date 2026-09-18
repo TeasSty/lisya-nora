@@ -1,6 +1,10 @@
 import { Hono, type MiddlewareHandler } from 'hono'
 import { clearSessionCookie, createSessionCookie, isSessionValid, timingSafeEqual } from './auth.js'
 import {
+  isOzonDeliveryConfigured,
+  searchOzonPvz,
+} from './ozonDelivery.js'
+import {
   PRODUCT_CATEGORIES,
   type OrderItemPayload,
   type OrderRow,
@@ -12,6 +16,10 @@ interface Env {
   DB: D1Database
   ADMIN_PASSWORD: string
   SESSION_SECRET: string
+  /** Ozon Delivery for Business — см. комментарии в worker/ozonDelivery.ts */
+  OZON_DELIVERY_CLIENT_ID?: string
+  OZON_DELIVERY_CLIENT_SECRET?: string
+  OZON_DELIVERY_SCOPE?: string
 }
 
 /** Сжатые data URL в D1 без R2; для продакшена лучше вынести фото в R2. */
@@ -137,6 +145,70 @@ app.get('/api/products', async (c) => {
   } catch (error) {
     console.error('GET /api/products failed', error)
     return c.json({ error: 'Не удалось загрузить каталог' }, 500)
+  }
+})
+
+app.get('/api/ozon/pvz/status', (c) => {
+  return c.json({
+    configured: isOzonDeliveryConfigured(c.env),
+    mapUrl: 'https://www.ozon.ru/info/map/',
+  })
+})
+
+app.get('/api/ozon/pvz', async (c) => {
+  const city = (c.req.query('city') ?? '').trim()
+  if (city.length < 2) {
+    return c.json({ error: 'Укажите город для поиска пункта выдачи' }, 400)
+  }
+  if (city.length > 120) {
+    return c.json({ error: 'Слишком длинное название города' }, 400)
+  }
+
+  try {
+    const result = await searchOzonPvz(c.env, city, c.executionCtx)
+    if (!result.ok) {
+      const status = result.code === 'not_configured' ? 503 : 502
+      return c.json(
+        {
+          error: result.error,
+          code: result.code,
+          configured: false,
+          mapUrl: 'https://www.ozon.ru/info/map/',
+          points: [],
+        },
+        status,
+      )
+    }
+
+    if ('warming' in result && result.warming) {
+      return c.json({
+        configured: true,
+        warming: true,
+        points: [],
+        mapUrl: 'https://www.ozon.ru/info/map/',
+        message:
+          'Каталог пунктов Ozon обновляется. Подождите около минуты или выберите точку на карте.',
+      })
+    }
+
+    return c.json({
+      configured: true,
+      warming: false,
+      points: result.points,
+      mapUrl: 'https://www.ozon.ru/info/map/',
+    })
+  } catch (error) {
+    console.error('GET /api/ozon/pvz failed', error)
+    return c.json(
+      {
+        error: 'Не удалось получить пункты выдачи Ozon',
+        code: 'ozon_error',
+        configured: isOzonDeliveryConfigured(c.env),
+        mapUrl: 'https://www.ozon.ru/info/map/',
+        points: [],
+      },
+      502,
+    )
   }
 })
 

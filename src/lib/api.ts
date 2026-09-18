@@ -160,6 +160,78 @@ function normalizeOrderPayload(payload: OrderPayload): {
   }
 }
 
+export interface OzonPvzStatus {
+  configured: boolean
+  mapUrl: string
+}
+
+export interface OzonPvzSearchResponse {
+  configured: boolean
+  warming: boolean
+  points: Array<{
+    id: number
+    name: string
+    address: string
+    type: string
+    isActive: boolean
+    lat: number | null
+    lon: number | null
+  }>
+  mapUrl: string
+  message?: string
+  error?: string
+  code?: string
+}
+
+export function fetchOzonPvzStatus(): Promise<OzonPvzStatus> {
+  if (DEMO_MODE) {
+    return demoDelay({ configured: false, mapUrl: 'https://www.ozon.ru/info/map/' }, 150)
+  }
+  return request('/api/ozon/pvz/status')
+}
+
+export async function searchOzonPvz(city: string): Promise<OzonPvzSearchResponse> {
+  const query = city.trim()
+  if (DEMO_MODE) {
+    return demoDelay(
+      {
+        configured: false,
+        warming: false,
+        points: [],
+        mapUrl: 'https://www.ozon.ru/info/map/',
+        code: 'not_configured',
+        message: 'В демо-режиме API Ozon недоступен — выберите пункт на карте.',
+      },
+      300,
+    )
+  }
+
+  const response = await fetch(`/api/ozon/pvz?city=${encodeURIComponent(query)}`, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  const data = (await response.json().catch(() => null)) as OzonPvzSearchResponse | null
+
+  if (!data) {
+    throw new ApiError('Не удалось загрузить пункты выдачи Ozon')
+  }
+
+  // 503 (не настроен) и 502 (ошибка Ozon) отдаём в UI как обычный ответ с fallback на карту.
+  if (!response.ok && response.status !== 503 && response.status !== 502) {
+    throw new ApiError(data.error ?? 'Не удалось загрузить пункты выдачи Ozon')
+  }
+
+  return {
+    configured: Boolean(data.configured),
+    warming: Boolean(data.warming),
+    points: Array.isArray(data.points) ? data.points : [],
+    mapUrl: data.mapUrl || 'https://www.ozon.ru/info/map/',
+    message: data.message,
+    error: data.error,
+    code: data.code,
+  }
+}
+
 export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
   const normalized = normalizeOrderPayload(payload)
 
