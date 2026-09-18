@@ -25,8 +25,12 @@ interface CartContextValue {
   openCart: () => void
   closeCart: () => void
   checkoutOpen: boolean
+  /** Снимок корзины на момент оформления — чтобы после очистки модалка не исчезала */
+  checkoutItems: CartItem[]
   openCheckout: () => void
   closeCheckout: () => void
+  /** После успешной заявки: очистить корзину и закрыть ящик */
+  completeCheckout: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -51,6 +55,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   )
   const [isOpen, setIsOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([])
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
@@ -90,15 +95,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setIsOpen(false)
       },
       checkoutOpen,
+      checkoutItems,
       openCheckout() {
+        setCheckoutItems(items)
         setIsOpen(false)
         setCheckoutOpen(true)
       },
       closeCheckout() {
         setCheckoutOpen(false)
+        setCheckoutItems([])
+      },
+      completeCheckout() {
+        setItems([])
+        setIsOpen(false)
+        localStorage.setItem(CART_STORAGE_KEY, '[]')
       },
     }
-  }, [items, isOpen, checkoutOpen])
+  }, [items, isOpen, checkoutOpen, checkoutItems])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

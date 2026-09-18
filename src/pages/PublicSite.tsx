@@ -19,7 +19,7 @@ function PublicSiteInner() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomId>('all')
-  const { addProduct, items, checkoutOpen, closeCheckout, clear } = useCart()
+  const { addProduct, checkoutOpen, checkoutItems, closeCheckout, completeCheckout } = useCart()
   const noraRef = useReveal<HTMLDivElement>()
 
   useEffect(() => {
@@ -43,7 +43,7 @@ function PublicSiteInner() {
     }
   }, [])
 
-  const checkoutProducts = items.map((item) => ({
+  const checkoutProducts = checkoutItems.map((item) => ({
     ...item.product,
     quantity: item.quantity,
   }))
@@ -92,7 +92,11 @@ function PublicSiteInner() {
       <CartDrawer />
 
       {checkoutOpen && checkoutProducts.length > 0 && (
-        <OrderModal products={checkoutProducts} onClose={closeCheckout} onSuccess={clear} />
+        <OrderModal
+          products={checkoutProducts}
+          onClose={closeCheckout}
+          onSuccess={completeCheckout}
+        />
       )}
     </>
   )
