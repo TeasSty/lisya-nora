@@ -32,7 +32,19 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="container site-header__inner">
-        <a href="#top" className="site-header__brand" aria-label="Лисья нора — на главную">
+        <a
+          href={import.meta.env.BASE_URL}
+          className="site-header__brand"
+          aria-label="Лисья нора — на главную"
+          onClick={(event) => {
+            event.preventDefault()
+            if (window.location.hash) {
+              const { pathname, search } = window.location
+              window.history.replaceState(null, '', `${pathname}${search}`)
+            }
+            document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+        >
           <FoxMark />
           <span>Лисья нора</span>
         </a>
