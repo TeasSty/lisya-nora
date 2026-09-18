@@ -102,6 +102,9 @@ export function fetchProducts(): Promise<{ products: Product[] }> {
 export interface OrderPayload {
   name: string
   phone: string
+  city: string
+  address: string
+  pickupPoint: string
   comment: string
   /** Новые заявки: список позиций из корзины. */
   items: OrderItem[]
@@ -113,6 +116,9 @@ export interface OrderPayload {
 function normalizeOrderPayload(payload: OrderPayload): {
   name: string
   phone: string
+  city: string
+  address: string
+  pickupPoint: string
   comment: string
   items: OrderItem[]
   productId: number | null
@@ -144,6 +150,9 @@ function normalizeOrderPayload(payload: OrderPayload): {
   return {
     name: payload.name,
     phone: payload.phone,
+    city: payload.city?.trim() ?? '',
+    address: payload.address?.trim() ?? '',
+    pickupPoint: payload.pickupPoint?.trim() ?? '',
     comment: payload.comment,
     items: validItems,
     productId,
@@ -160,6 +169,10 @@ export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
       id: Date.now(),
       name: normalized.name,
       phone: normalized.phone,
+      city: normalized.city,
+      address: normalized.address,
+      pickupPoint: normalized.pickupPoint,
+      trackingNumber: '',
       productId: normalized.productId,
       productName: normalized.productName,
       items: normalized.items,
@@ -224,6 +237,22 @@ export function updateOrderStatus(id: number, status: 'new' | 'done'): Promise<{
   return request(`/api/admin/orders/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  })
+}
+
+export function updateOrderTracking(id: number, trackingNumber: string): Promise<{ ok: true }> {
+  const value = trackingNumber.trim()
+  if (DEMO_MODE) {
+    requireDemoAuth()
+    const orders = readDemoOrders().map((order) =>
+      order.id === id ? { ...order, trackingNumber: value } : order,
+    )
+    writeDemoOrders(orders)
+    return demoDelay({ ok: true as const }, 250)
+  }
+  return request(`/api/admin/orders/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ trackingNumber: value }),
   })
 }
 

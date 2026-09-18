@@ -95,6 +95,10 @@ function toAdminOrder(row: OrderRow) {
     id: row.id,
     name: row.customer_name,
     phone: row.phone,
+    city: row.city ?? '',
+    address: row.address ?? '',
+    pickupPoint: row.pickup_point ?? '',
+    trackingNumber: row.tracking_number ?? '',
     productId: row.product_id,
     productName: row.product_name,
     ...(items ? { items } : {}),
@@ -141,6 +145,9 @@ app.post('/api/orders', async (c) => {
     const body = await c.req.json<{
       name?: unknown
       phone?: unknown
+      city?: unknown
+      address?: unknown
+      pickupPoint?: unknown
       productId?: unknown
       productName?: unknown
       items?: unknown
@@ -149,6 +156,9 @@ app.post('/api/orders', async (c) => {
 
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
+    const city = typeof body.city === 'string' ? body.city.trim() : ''
+    const address = typeof body.address === 'string' ? body.address.trim() : ''
+    const pickupPoint = typeof body.pickupPoint === 'string' ? body.pickupPoint.trim() : ''
     const comment = typeof body.comment === 'string' ? body.comment.trim() : ''
 
     let items = parseOrderItems(body.items)
@@ -175,6 +185,15 @@ app.post('/api/orders', async (c) => {
     if (!phone || phone.length > 40) {
       return c.json({ error: 'Укажите телефон' }, 400)
     }
+    if (!city || city.length > 120) {
+      return c.json({ error: 'Укажите город получения' }, 400)
+    }
+    if (!address || address.length < 10 || address.length > 300 || !/\d/.test(address)) {
+      return c.json({ error: 'Укажите точный адрес: улица и номер дома' }, 400)
+    }
+    if (!pickupPoint || pickupPoint.length < 12 || pickupPoint.length > 400 || !/\d/.test(pickupPoint)) {
+      return c.json({ error: 'Укажите полный адрес пункта выдачи Ozon' }, 400)
+    }
     if (items.length === 0) {
       return c.json({ error: 'Не выбран товар' }, 400)
     }
@@ -199,9 +218,9 @@ app.post('/api/orders', async (c) => {
     const itemsJson = JSON.stringify(items)
 
     await c.env.DB.prepare(
-      'INSERT INTO orders (customer_name, phone, product_id, product_name, items_json, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO orders (customer_name, phone, city, address, pickup_point, product_id, product_name, items_json, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
-      .bind(name, phone, productId, productName, itemsJson, comment, 'new')
+      .bind(name, phone, city, address, pickupPoint, productId, productName, itemsJson, comment, 'new')
       .run()
 
     return c.json({ ok: true })
@@ -259,7 +278,7 @@ app.use('/api/admin/products', requireAuth)
 app.get('/api/admin/orders', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, customer_name, phone, product_id, product_name, items_json, comment, status, created_at FROM orders ORDER BY created_at DESC, id DESC',
+      'SELECT id, customer_name, phone, city, address, pickup_point, tracking_number, product_id, product_name, items_json, comment, status, created_at FROM orders ORDER BY created_at DESC, id DESC',
     ).all<OrderRow>()
     return c.json({ orders: results.map(toAdminOrder) })
   } catch (error) {
@@ -273,7 +292,19 @@ app.patch('/api/admin/orders/:id', async (c) => {
     const id = Number(c.req.param('id'))
     if (!Number.isFinite(id)) return c.json({ error: 'Некорректный id' }, 400)
 
-    const body = await c.req.json<{ status?: unknown }>()
+    const body = await c.req.json<{ status?: unknown; trackingNumber?: unknown }>()
+
+    if (typeof body.trackingNumber === 'string') {
+      const trackingNumber = body.trackingNumber.trim()
+      if (trackingNumber.length > 120) {
+        return c.json({ error: 'Слишком длинный трек-номер' }, 400)
+      }
+      await c.env.DB.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?')
+        .bind(trackingNumber, id)
+        .run()
+      return c.json({ ok: true })
+    }
+
     const status = body.status
     if (status !== 'new' && status !== 'done') {
       return c.json({ error: 'Некорректный статус' }, 400)

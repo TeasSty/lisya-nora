@@ -246,11 +246,59 @@
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+.order-row__ship {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+.order-row__ship strong {
+  color: var(--color-ink);
+}
+
+.order-row__track {
+  display: grid;
+  gap: 6px;
+}
+
+.order-row__track label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.order-row__track-row {
+  display: grid;
+  gap: 8px;
+}
+
+.order-row__track-row input {
+  width: 100%;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  background: var(--color-paper);
+}
+
+.order-row__copy-note {
+  color: var(--color-forest-dark);
+  font-weight: 700;
+}
+
 .order-row__actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .order-row__track-row {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
 }
 
 .status-pill {

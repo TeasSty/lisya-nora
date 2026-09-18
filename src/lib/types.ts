@@ -29,6 +29,14 @@ export interface AdminOrder {
   id: number
   name: string
   phone: string
+  /** Город получения (для Ozon). */
+  city?: string
+  /** Точный адрес клиента (улица, дом — чтобы не путать ПВЗ). */
+  address?: string
+  /** Адрес / название пункта выдачи Ozon. */
+  pickupPoint?: string
+  /** Трек-номер после оформления отправки. */
+  trackingNumber?: string
   /** Первый товар / legacy — для совместимости со старыми заявками. */
   productId: number | null
   /** Сводка названий или единственный товар (legacy). */

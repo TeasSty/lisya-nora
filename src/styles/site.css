@@ -925,6 +925,55 @@
   font-weight: 700;
 }
 
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-ink-soft);
+}
+
+.pvz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pvz-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(43, 32, 25, 0.62);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.pvz-picker__panel {
+  width: min(100%, 460px);
+  background: var(--color-paper);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-soft);
+  box-shadow: var(--shadow-pop);
+  padding: 24px 20px 20px;
+  position: relative;
+}
+
+.pvz-picker__panel h3 {
+  font-size: 20px;
+  margin: 0 40px 12px 0;
+}
+
+.pvz-picker__steps {
+  margin: 0 0 16px;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 6px;
+  color: var(--color-ink-soft);
+  font-size: 14px;
+}
+
+
 /* =========================================================
    Корзина
    ========================================================= */
