@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { FoxMark } from './FoxMark'
+import { MERCHANT } from '../../lib/merchant'
 
 export function Footer() {
   return (
@@ -7,28 +9,45 @@ export function Footer() {
         <div className="site-footer__grid">
           <div className="site-footer__brand">
             <FoxMark />
-            <span>Лисья нора</span>
+            <span>{MERCHANT.brandName}</span>
           </div>
 
           <nav aria-label="Контакты">
             <ul className="site-footer__links">
               <li>
-                <a href="tel:+79213326427">+7 921 332-64-27</a>
+                <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>
               </li>
               <li>
-                <a href="https://vk.com/lissi_nora" target="_blank" rel="noreferrer">
+                <a href={MERCHANT.vkUrl} target="_blank" rel="noreferrer">
                   ВКонтакте
                 </a>
               </li>
               <li>
-                <a href="#gde-my">Краснофлотская, 4А, Выборг</a>
+                <a href="#gde-my">{MERCHANT.addressShort}</a>
               </li>
             </ul>
           </nav>
         </div>
 
+        <div className="site-footer__legal">
+          <p>
+            <strong>{MERCHANT.legalName}</strong>
+            <br />
+            ИНН {MERCHANT.inn} · ОГРНИП {MERCHANT.ogrnip}
+            <br />
+            {MERCHANT.address}
+          </p>
+          <p>
+            Заявки с сайта — не онлайн-оплата. Свяжемся по телефону {MERCHANT.responsePromise}.
+            Самовывоз: {MERCHANT.addressShort}, {MERCHANT.hours}.
+          </p>
+        </div>
+
         <div className="site-footer__bottom">
-          <span>© {new Date().getFullYear()} «Лисья нора» · магазин уникальных подарков</span>
+          <span>
+            © {new Date().getFullYear()} «{MERCHANT.brandName}» · магазин уникальных подарков
+          </span>
+          <Link to="/privacy">Политика персональных данных</Link>
         </div>
       </div>
     </footer>

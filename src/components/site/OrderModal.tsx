@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { ApiError, submitOrder } from '../../lib/api'
+import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import type { Product } from '../../lib/types'
 
@@ -17,10 +19,12 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [comment, setComment] = useState('')
+  const [consent, setConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done'>('idle')
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  const consentId = useId()
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
@@ -79,6 +83,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
       setError('Добавьте хотя бы один товар')
       return
     }
+    if (!consent) {
+      setError('Нужно согласие на обработку персональных данных')
+      return
+    }
 
     setStatus('submitting')
     try {
@@ -115,8 +123,12 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
             </svg>
             <h3 id={titleId}>Заявка отправлена</h3>
             <p>
-              Мы свяжемся с вами по телефону {phone}. Если вопрос срочный — звоните сами:{' '}
-              <a href="tel:+79213326427">+7 921 332-64-27</a>.
+              Перезвоним на {phone} {MERCHANT.responsePromise} ({MERCHANT.hours}). Заказ можно забрать
+              самовывозом: {MERCHANT.addressShort}. Доставку, если понадобится, обсудим при звонке.
+            </p>
+            <p>
+              Срочно — звоните:{' '}
+              <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>.
             </p>
             <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 16 }} onClick={onClose}>
               Закрыть
@@ -125,6 +137,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
         ) : (
           <>
             <h3 id={titleId}>Оставить заявку</h3>
+            <p className="modal-panel__hint">
+              Без оплаты онлайн. Наличие и цену подтвердим при звонке. Самовывоз —{' '}
+              {MERCHANT.addressShort}.
+            </p>
             <div className="modal-panel__products" aria-label="Выбранные товары">
               <p className="modal-panel__product">
                 {products.length === 1 ? 'Товар:' : `Товары (${products.length}):`}
@@ -173,11 +189,27 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 <label htmlFor="order-comment">Комментарий (необязательно)</label>
                 <textarea
                   id="order-comment"
-                  placeholder="Например: нужен другой размер, могу забрать сегодня после 17:00"
+                  placeholder="Например: могу забрать сегодня после 17:00"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                 />
               </div>
+
+              <label className="consent-field" htmlFor={consentId}>
+                <input
+                  id={consentId}
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  required
+                />
+                <span>
+                  Согласен(на) на обработку персональных данных по{' '}
+                  <Link to="/privacy" target="_blank" rel="noreferrer">
+                    политике
+                  </Link>
+                </span>
+              </label>
 
               {error && (
                 <p className="form-error" role="alert">
