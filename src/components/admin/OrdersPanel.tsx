@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ApiError,
   fetchAdminOrders,
@@ -24,6 +24,19 @@ function formatDate(iso: string): string {
   }
 }
 
+/** Нормализует ввод: убирает №/# и пробелы, оставляет цифры для поиска. */
+function normalizeIdQuery(raw: string): string {
+  return raw.trim().replace(/^[№#]+/, '').replace(/\s+/g, '')
+}
+
+/** Точное совпадение или подстрока (удобно искать по последним цифрам длинного id). */
+function orderMatchesIdQuery(id: number, raw: string): boolean {
+  const q = normalizeIdQuery(raw)
+  if (!q) return true
+  const idStr = String(id)
+  return idStr === q || idStr.includes(q)
+}
+
 async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
@@ -40,6 +53,7 @@ export function OrdersPanel() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [copyNote, setCopyNote] = useState<string | null>(null)
   const [trackingDrafts, setTrackingDrafts] = useState<Record<number, string>>({})
+  const [idQuery, setIdQuery] = useState('')
 
   function load() {
     setIsLoading(true)
@@ -104,6 +118,11 @@ export function OrdersPanel() {
   }
 
   const newCount = orders.filter((order) => order.status === 'new').length
+  const hasIdQuery = normalizeIdQuery(idQuery).length > 0
+  const filteredOrders = useMemo(
+    () => orders.filter((order) => orderMatchesIdQuery(order.id, idQuery)),
+    [orders, idQuery],
+  )
 
   return (
     <div className="admin-card">
@@ -118,15 +137,37 @@ export function OrdersPanel() {
       </div>
 
       {!isLoading && !error && orders.length > 0 && (
-        <p className="order-row__meta" style={{ marginBottom: 14 }}>
-          Новых: <strong>{newCount}</strong>
-          {copyNote && (
-            <>
-              {' '}
-              · <span className="order-row__copy-note">{copyNote}</span>
-            </>
-          )}
-        </p>
+        <>
+          <div className="order-search">
+            <label htmlFor="order-id-search">Поиск по номеру заявки</label>
+            <input
+              id="order-id-search"
+              type="search"
+              inputMode="numeric"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Полный номер или последние цифры"
+              value={idQuery}
+              onChange={(e) => setIdQuery(e.target.value)}
+            />
+          </div>
+
+          <p className="order-row__meta order-list__summary">
+            Новых: <strong>{newCount}</strong>
+            {hasIdQuery && (
+              <>
+                {' '}
+                · Найдено: <strong>{filteredOrders.length}</strong>
+              </>
+            )}
+            {copyNote && (
+              <>
+                {' '}
+                · <span className="order-row__copy-note">{copyNote}</span>
+              </>
+            )}
+          </p>
+        </>
       )}
 
       {isLoading && (
@@ -147,15 +188,24 @@ export function OrdersPanel() {
           Как только кто-то оставит заявку на сайте, она появится здесь.
         </div>
       )}
+      {!isLoading && !error && orders.length > 0 && filteredOrders.length === 0 && (
+        <div className="admin-empty">
+          <strong>Ничего не найдено</strong>
+          Проверьте номер заявки или очистите поиск.
+        </div>
+      )}
 
-      {!isLoading && !error && orders.length > 0 && (
+      {!isLoading && !error && filteredOrders.length > 0 && (
         <div className="order-list">
-          {orders.map((order) => {
+          {filteredOrders.map((order) => {
             const items = normalizeAdminOrder(order).items
             return (
               <article className="order-row" key={order.id}>
                 <div className="order-row__top">
-                  <span className="order-row__name">{order.name}</span>
+                  <div className="order-row__heading">
+                    <span className="order-row__id">№{order.id}</span>
+                    <span className="order-row__name">{order.name}</span>
+                  </div>
                   <span className={`status-pill status-pill--${order.status}`}>
                     {order.status === 'new' ? 'Новая' : 'Выполнена'}
                   </span>

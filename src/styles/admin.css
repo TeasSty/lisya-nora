@@ -193,6 +193,44 @@
 }
 
 /* Заявки */
+.order-search {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.order-search label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.order-search input {
+  width: 100%;
+  max-width: 320px;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.order-search input::placeholder {
+  color: var(--color-ink-soft);
+  opacity: 0.85;
+}
+
+.order-search input:focus {
+  outline: 2px solid var(--color-fox-tint);
+  outline-offset: 1px;
+  border-color: var(--color-fox);
+}
+
+.order-list__summary {
+  margin: 0 0 14px;
+}
+
 .order-list {
   display: flex;
   flex-direction: column;
@@ -215,6 +253,20 @@
   align-items: flex-start;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.order-row__heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.order-row__id {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 
 .order-row__name {

@@ -49,6 +49,10 @@ export function StoreMap() {
       zoomControl: true,
       attributionControl: true,
     })
+    // Leaflet 1.9+ default prefix includes a UA flag; keep the Leaflet credit, drop the flag.
+    map.attributionControl.setPrefix(
+      '<a href="https://leafletjs.com" target="_blank" rel="noreferrer">Leaflet</a>',
+    )
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution:

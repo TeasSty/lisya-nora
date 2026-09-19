@@ -1774,34 +1774,61 @@
 .site-footer {
   background: var(--color-ink);
   color: var(--color-bg);
-  padding: 28px 0 18px;
+  padding: 18px 0 14px;
 }
 
-.site-footer__grid {
+.site-footer__main {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .site-footer__brand {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .site-footer__brand .fox-mark {
-  width: 96px;
-  height: 96px;
+  width: 52px;
+  height: 52px;
+}
+
+.site-footer__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .site-footer__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 18px;
+  align-items: center;
+  gap: 6px 0;
   font-size: 14px;
+  line-height: 1.35;
+}
+
+.site-footer__links li {
+  display: inline-flex;
+  align-items: center;
+}
+
+.site-footer__links li:not(:last-child)::after {
+  content: '·';
+  margin: 0 10px;
+  color: rgba(251, 243, 228, 0.4);
+  pointer-events: none;
 }
 
 .site-footer__links a {
-  color: rgba(251, 243, 228, 0.85);
+  color: rgba(251, 243, 228, 0.88);
   text-decoration: none;
 }
 
@@ -1810,13 +1837,16 @@
 }
 
 .site-footer__legal {
-  margin-top: 12px;
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: rgba(251, 243, 228, 0.72);
-  max-width: 52rem;
+}
+
+.site-footer__legal p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .site-footer__legal strong {
@@ -1827,38 +1857,56 @@
 .site-footer__bottom {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 12px;
-  margin-top: 10px;
+  gap: 4px;
+  padding-top: 10px;
+  margin-top: 12px;
   border-top: 1px solid rgba(251, 243, 228, 0.15);
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.35;
   color: rgba(251, 243, 228, 0.6);
 }
 
 .site-footer__bottom a {
   color: rgba(251, 243, 228, 0.6);
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @media (min-width: 720px) {
   .site-footer {
-    padding: 32px 0 20px;
+    padding: 22px 0 16px;
   }
 
-  .site-footer__grid {
+  .site-footer__main {
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
   }
 
   .site-footer__brand .fox-mark {
-    width: 112px;
-    height: 112px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .site-footer__content {
+    gap: 6px;
   }
 
   .site-footer__legal {
-    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .site-footer__legal p {
+    display: block;
+  }
+
+  .site-footer__legal strong {
+    margin-right: 0.55em;
+  }
+
+  .site-footer__legal span + span::before {
+    content: ' · ';
+    color: rgba(251, 243, 228, 0.4);
   }
 
   .site-footer__bottom {
@@ -1866,8 +1914,9 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 16px;
-    padding-top: 14px;
+    padding-top: 10px;
     margin-top: 12px;
+    font-size: 13px;
   }
 }
 
