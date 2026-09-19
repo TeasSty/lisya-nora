@@ -9,8 +9,8 @@ class ApiError extends Error {}
 const DEMO_SESSION_KEY = 'lisya-nora-demo-admin'
 const DEMO_PRODUCTS_KEY = 'lisya-nora-demo-products'
 const DEMO_ORDERS_KEY = 'lisya-nora-demo-orders'
-/** Пароль только для локального демо-просмотра панели. В проде пароль живёт на сервере. */
-export const DEMO_ADMIN_PASSWORD = 'lisya'
+/** Пароль демо-панели только в бандле; не светим его в UI/README публичного репо. */
+export const DEMO_ADMIN_PASSWORD = 'nora-demo-panel'
 
 function demoDelay<T>(value: T, ms = 500): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms))
@@ -265,7 +265,7 @@ export async function adminLogin(password: string): Promise<{ ok: true }> {
   if (DEMO_MODE) {
     await demoDelay(null, 400)
     if (password.trim() !== DEMO_ADMIN_PASSWORD) {
-      throw new ApiError('Неверный пароль. Для демо используйте: lisya')
+      throw new ApiError('Неверный пароль')
     }
     sessionStorage.setItem(DEMO_SESSION_KEY, '1')
     return { ok: true as const }

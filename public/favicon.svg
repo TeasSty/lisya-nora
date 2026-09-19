@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path d="M14 26 L22 4 L30 22 Z" fill="#C1552A" />
-  <path d="M50 26 L42 4 L34 22 Z" fill="#C1552A" />
-  <path d="M32 14 C46 14 54 28 50 42 C47 54 38 58 32 58 C26 58 17 54 14 42 C10 28 18 14 32 14 Z" fill="#C1552A" />
-  <path d="M32 34 C40 34 44 42 41 50 C39 55 35 57 32 57 C29 57 25 55 23 50 C20 42 24 34 32 34 Z" fill="#FBF3E4" />
-  <circle cx="24" cy="32" r="2.6" fill="#2B2019" />
-  <circle cx="40" cy="32" r="2.6" fill="#2B2019" />
-  <path d="M32 46 L28 50 L36 50 Z" fill="#2B2019" />
-</svg>

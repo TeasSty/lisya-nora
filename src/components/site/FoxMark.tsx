@@ -1,30 +1,31 @@
+import { assetPath } from '../../lib/assetPath'
+
 interface FoxMarkProps {
   className?: string
+  /** Светлая версия знака (для тёмного фона). По умолчанию — тёмная для кремового фона сайта. */
+  variant?: 'dark' | 'light'
 }
 
-/** Фирменный знак — минималистичная лисья мордочка. Цвет наследуется через currentColor. */
-export function FoxMark({ className }: FoxMarkProps) {
+/**
+ * Фирменная эмблема из Logo.pdf: лиса в серпе луны + адрес магазина.
+ * Растровая версия — PDF векторный, но без точной трассировки SVG надёжнее PNG/WebP.
+ */
+export function FoxMark({ className, variant = 'dark' }: FoxMarkProps) {
+  const src =
+    variant === 'light'
+      ? assetPath('images/logo-mark.webp')
+      : assetPath('images/logo-mark-dark.webp')
+
   return (
-    <svg
-      className={className}
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <img
+      className={className ? `fox-mark ${className}` : 'fox-mark'}
+      src={src}
+      alt=""
+      width={64}
+      height={64}
+      decoding="async"
       aria-hidden="true"
-    >
-      <path d="M14 26 L22 4 L30 22 Z" fill="currentColor" />
-      <path d="M50 26 L42 4 L34 22 Z" fill="currentColor" />
-      <path
-        d="M32 14 C46 14 54 28 50 42 C47 54 38 58 32 58 C26 58 17 54 14 42 C10 28 18 14 32 14 Z"
-        fill="currentColor"
-      />
-      <path
-        d="M32 34 C40 34 44 42 41 50 C39 55 35 57 32 57 C29 57 25 55 23 50 C20 42 24 34 32 34 Z"
-        fill="var(--fox-mark-muzzle, #fbf3e4)"
-      />
-      <circle cx="24" cy="32" r="2.6" fill="var(--fox-mark-face, #2b2019)" />
-      <circle cx="40" cy="32" r="2.6" fill="var(--fox-mark-face, #2b2019)" />
-      <path d="M32 46 L28 50 L36 50 Z" fill="var(--fox-mark-face, #2b2019)" />
-    </svg>
+      draggable={false}
+    />
   )
 }

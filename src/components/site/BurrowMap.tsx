@@ -25,8 +25,8 @@ const NODE_POSITION: Record<BurrowRoomId, { left: number; top: number }> = {
   decor: { left: 90, top: 45 },
 }
 
-function RoomIcon({ id }: { id: RoomId }) {
-  if (id === 'all') return <FoxMark />
+function RoomIcon({ id, active = false }: { id: RoomId; active?: boolean }) {
+  if (id === 'all') return <FoxMark variant={active ? 'light' : 'dark'} />
   return <CategoryGlyph category={id} />
 }
 
@@ -49,7 +49,7 @@ export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
               aria-pressed={selected === room.id}
             >
               <span className="room-btn__icon">
-                <RoomIcon id={room.id} />
+                <RoomIcon id={room.id} active={selected === room.id} />
               </span>
               <span className="room-btn__text">
                 <strong>{room.title}</strong>
@@ -92,7 +92,7 @@ export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
                 onClick={() => onSelect(room.id)}
                 aria-pressed={selected === room.id}
               >
-                <RoomIcon id={room.id} />
+                <RoomIcon id={room.id} active={selected === room.id} />
                 <strong>{room.title}</strong>
                 <span>{room.short}</span>
               </button>

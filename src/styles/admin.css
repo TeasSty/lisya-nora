@@ -30,10 +30,9 @@
   color: var(--color-ink);
 }
 
-.admin-topbar__brand svg {
-  width: 30px;
-  height: 30px;
-  color: var(--color-fox);
+.admin-topbar__brand .fox-mark {
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
 }
 
@@ -545,10 +544,9 @@
   background: linear-gradient(90deg, var(--color-fox), var(--color-forest));
 }
 
-.admin-login-card svg {
-  width: 48px;
-  height: 48px;
-  color: var(--color-fox);
+.admin-login-card .fox-mark {
+  width: 56px;
+  height: 56px;
   margin: 0 auto 14px;
 }
 
