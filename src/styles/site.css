@@ -14,8 +14,8 @@
 .site-header {
   position: sticky;
   top: 0;
-  /* Above map/Leaflet panes; below cart/modal (300) and PVZ picker (400) */
-  z-index: 200;
+  /* Above page content / Leaflet; below cart/modal (300) and PVZ picker (400) */
+  z-index: 250;
   background: rgba(251, 243, 228, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-line-soft);
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 24px;
+  padding: 6px 24px;
   gap: 12px;
 }
 
@@ -37,19 +37,27 @@
   flex-shrink: 0;
 }
 
-.site-header__brand .fox-mark,
 .fox-mark {
-  width: 132px;
-  height: 132px;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
 }
 
+.site-header__brand .fox-mark {
+  width: 76px;
+  height: 76px;
+}
+
 @media (max-width: 479px) {
   .site-header__brand .fox-mark {
-    width: 104px;
-    height: 104px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .site-header__inner {
+    padding: 4px 16px;
   }
 }
 
