@@ -160,17 +160,19 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
               <path d="M4 12.5 L9.5 18 L20 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <h3 id={titleId}>Заявка отправлена</h3>
-            <p>
-              Перезвоним на {phone} {MERCHANT.responsePromise} ({MERCHANT.hours}).
-            </p>
-            <p className="form-success__soft">
-              Доставка Ozon по выбранному ПВЗ или самовывоз: {MERCHANT.addressShort}.
-            </p>
-            <p>
-              Срочно —{' '}
-              <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>.
-            </p>
-            <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 16 }} onClick={onClose}>
+            <div className="form-success__body">
+              <p>
+                Перезвоним на <strong>{phone}</strong> {MERCHANT.responsePromise} ({MERCHANT.hours}).
+              </p>
+              <p className="form-success__soft">
+                Доставка Ozon по выбранному ПВЗ или самовывоз: {MERCHANT.addressShort}.
+              </p>
+              <p>
+                Срочно —{' '}
+                <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>
+              </p>
+            </div>
+            <button type="button" className="btn btn-ghost btn-sm form-success__close" onClick={onClose}>
               Закрыть
             </button>
           </div>

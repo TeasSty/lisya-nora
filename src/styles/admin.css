@@ -14,25 +14,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 8px 14px;
   background: rgba(254, 249, 239, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-line-soft);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .admin-topbar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   color: var(--color-ink);
+  min-width: 0;
 }
 
 .admin-topbar__brand .fox-mark {
-  width: 96px;
-  height: 96px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
 }
 
@@ -41,14 +42,46 @@
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--color-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-topbar__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-topbar__actions .btn {
+  padding: 7px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .admin-topbar {
+    padding: 12px 20px;
+    gap: 12px;
+  }
+
+  .admin-topbar__brand .fox-mark {
+    width: 56px;
+    height: 56px;
+  }
+
+  .admin-topbar__brand small {
+    font-size: 13px;
+  }
+
+  .admin-topbar__actions .btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
 }
 
 .admin-content {
