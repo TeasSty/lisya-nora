@@ -1,8 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  suggestAddresses,
-  suggestCities,
+  suggestFullAddresses,
   type AddressSuggestion,
 } from '../../lib/addressSuggest'
 
@@ -11,9 +10,6 @@ interface AddressSuggestInputProps {
   label: string
   value: string
   onChange: (value: string) => void
-  mode: 'city' | 'address'
-  /** Для режима address — сужаем поиск городом */
-  cityHint?: string
   placeholder?: string
   autoComplete?: string
   invalid?: boolean
@@ -29,8 +25,6 @@ export function AddressSuggestInput({
   label,
   value,
   onChange,
-  mode,
-  cityHint,
   placeholder,
   autoComplete,
   invalid,
@@ -52,8 +46,7 @@ export function AddressSuggestInput({
 
   useEffect(() => {
     const q = value.trim()
-    const minLen = mode === 'city' ? 2 : 3
-    if (q.length < minLen) {
+    if (q.length < 3) {
       setItems([])
       setLoading(false)
       setActiveIndex(-1)
@@ -65,12 +58,7 @@ export function AddressSuggestInput({
     setLoading(true)
     setEmpty(false)
     const timer = window.setTimeout(() => {
-      const request =
-        mode === 'city'
-          ? suggestCities(q, { signal: controller.signal })
-          : suggestAddresses(q, { city: cityHint, signal: controller.signal })
-
-      request
+      suggestFullAddresses(q, { signal: controller.signal })
         .then((next) => {
           setItems(next)
           setOpen(true)
@@ -93,7 +81,7 @@ export function AddressSuggestInput({
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [value, mode, cityHint])
+  }, [value])
 
   useLayoutEffect(() => {
     if (!open || (!items.length && !loading && !empty)) {

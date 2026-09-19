@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { extractCityFromFullAddress } from '../../lib/addressSuggest'
 import { ApiError, submitOrder } from '../../lib/api'
 import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
@@ -19,15 +20,16 @@ interface OrderModalProps {
 
 const CONSENT_ERROR = 'Нужно согласие на обработку персональных данных'
 
-type FieldKey = 'name' | 'phone' | 'city' | 'address' | 'pickupPoint' | 'consent'
+type FieldKey = 'name' | 'phone' | 'address' | 'pickupPoint' | 'consent'
 
 type FieldErrors = Partial<Record<FieldKey, string>>
 
 export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [city, setCity] = useState('')
   const [address, setAddress] = useState('')
+  /** Город из подсказки — уходит в заявку, в форме отдельного поля нет. */
+  const [cityFromSuggest, setCityFromSuggest] = useState<string | null>(null)
   const [pickupPoint, setPickupPoint] = useState('')
   const [comment, setComment] = useState('')
   const [consent, setConsent] = useState(false)
@@ -103,11 +105,8 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     if (phone.trim().replace(/\D/g, '').length < 10 || phone.trim().replace(/\D/g, '').length > 15) {
       nextErrors.phone = 'Проверьте номер телефона'
     }
-    if (city.trim().length < 2) {
-      nextErrors.city = 'Укажите город получения'
-    }
     if (!isCompleteAddress(address)) {
-      nextErrors.address = 'Укажите точный адрес: улица и номер дома'
+      nextErrors.address = 'Укажите город, улицу и номер дома'
     }
     if (!isCompletePickupPoint(pickupPoint)) {
       nextErrors.pickupPoint = 'Укажите полный адрес пункта выдачи Ozon'
@@ -129,11 +128,15 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
 
     setFieldErrors({})
     setStatus('submitting')
+    const city =
+      cityFromSuggest?.trim() ||
+      extractCityFromFullAddress(address) ||
+      'не указан'
     try {
       await submitOrder({
         name: name.trim(),
         phone: phone.trim(),
-        city: city.trim(),
+        city,
         address: address.trim(),
         pickupPoint: pickupPoint.trim(),
         comment: comment.trim(),
@@ -261,45 +264,24 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
               </div>
 
               <AddressSuggestInput
-                id="order-city"
-                label="Город получения"
-                mode="city"
-                placeholder="Начните вводить город…"
-                autoComplete="address-level2"
-                value={city}
-                invalid={Boolean(fieldErrors.city)}
-                describedBy={fieldErrors.city ? 'order-city-error' : undefined}
-                error={fieldErrors.city ?? null}
-                errorId="order-city-error"
-                onChange={(next) => {
-                  setCity(next)
-                  clearFieldError('city')
-                }}
-              />
-
-              <AddressSuggestInput
                 id="order-address"
-                label="Точный адрес (улица, дом)"
-                mode="address"
-                cityHint={city}
-                placeholder="ул. Ленина, д. 12"
+                label="Адрес (город, улица, дом)"
+                placeholder="Мурманск, ул. Ленина, д. 12"
                 autoComplete="street-address"
                 value={address}
                 invalid={Boolean(fieldErrors.address)}
                 describedBy={fieldErrors.address ? 'order-address-error' : undefined}
-                hint="Выберите адрес из списка или допишите номер дома / квартиру."
+                hint="Начните вводить — выберите из списка или допишите квартиру."
                 error={fieldErrors.address ?? null}
                 errorId="order-address-error"
                 onChange={(next) => {
                   setAddress(next)
+                  setCityFromSuggest(null)
                   clearFieldError('address')
                 }}
                 onPickSuggestion={(item) => {
                   setAddress(item.label)
-                  if (!city.trim() && item.city) {
-                    setCity(item.city)
-                    clearFieldError('city')
-                  }
+                  setCityFromSuggest(item.city)
                   clearFieldError('address')
                 }}
               />
@@ -333,7 +315,10 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                     Открыть карту Ozon
                   </a>
                 </div>
-                <p className="field-hint">Найдите пункт на карте и вставьте сюда его полный адрес.</p>
+                <p className="field-hint">
+                  Город в пункте уже есть — отдельное поле не нужно. Найдите ПВЗ на карте и вставьте
+                  адрес.
+                </p>
               </div>
 
               <div className="form-field">
