@@ -1114,14 +1114,6 @@
   font-weight: 700;
 }
 
-.form-error--consent {
-  margin: 8px 0 0;
-}
-
-.form-error--field {
-  margin: 6px 0 0;
-}
-
 .field-hint {
   margin: 6px 0 0;
   font-size: 12px;
@@ -1386,7 +1378,15 @@
 .form-error {
   color: #a13a1a;
   font-size: 13.5px;
-  margin: -6px 0 14px;
+  line-height: 1.35;
+  margin: 8px 0 14px;
+}
+
+/* Must follow .form-error so margin isn't overridden by the base rule */
+.form-error--field,
+.form-error--consent {
+  display: block;
+  margin: 8px 0 0;
 }
 
 .form-success {
