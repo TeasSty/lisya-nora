@@ -122,7 +122,7 @@ export function About() {
                 </li>
               ))}
             </ul>
-            <p className="about__quote">«У нас всегда тепло и вам всегда рады»</p>
+            <p className="about__quote">В самом сердце старого города</p>
           </div>
         </div>
       </div>
