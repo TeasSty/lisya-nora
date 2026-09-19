@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { assetPath } from '../../lib/assetPath'
+import { CategoryGlyph } from './ProductPattern'
 
 function CategoryBadge({
   label,
@@ -35,29 +36,16 @@ function HeroStage() {
       </div>
 
       <CategoryBadge label="Украшения" className="hero-den__badge--tl">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 3 L15 9 L21 10 L16.5 14.5 L18 21 L12 17.5 L6 21 L7.5 14.5 L3 10 L9 9 Z" />
-        </svg>
+        <CategoryGlyph category="jewelry" />
       </CategoryBadge>
       <CategoryBadge label="Обереги" className="hero-den__badge--tr">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 3 L14 9 L20 9 L15 13 L17 19 L12 15 L7 19 L9 13 L4 9 L10 9 Z" />
-        </svg>
+        <CategoryGlyph category="charms" />
       </CategoryBadge>
       <CategoryBadge label="Кузница" className="hero-den__badge--bl">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 16 L12 8 L16 12 L8 20 Z" />
-          <path d="M13 7 L19 3" />
-          <rect x="16" y="1" width="6" height="4" rx="1" transform="rotate(35 19 3)" />
-        </svg>
+        <CategoryGlyph category="forge" />
       </CategoryBadge>
       <CategoryBadge label="Зверята" className="hero-den__badge--br">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="13" r="7" />
-          <path d="M8 7 L6 3 M16 7 L18 3" />
-          <circle cx="10" cy="12" r="1" fill="currentColor" stroke="none" />
-          <circle cx="14" cy="12" r="1" fill="currentColor" stroke="none" />
-        </svg>
+        <CategoryGlyph category="curiosities" />
       </CategoryBadge>
     </div>
   )

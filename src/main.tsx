@@ -4,6 +4,9 @@ import './index.css'
 import './styles/site.css'
 import './styles/admin.css'
 import App from './App.tsx'
+import { initScrollRestore } from './lib/scrollRestore'
+
+initScrollRestore()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

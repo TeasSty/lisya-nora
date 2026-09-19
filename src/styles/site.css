@@ -383,7 +383,8 @@
   color: var(--color-ink);
 }
 
-.hero-den__badge svg {
+.hero-den__badge svg,
+.hero-den__badge .category-glyph {
   width: 24px;
   height: 24px;
 }
@@ -556,10 +557,23 @@
 }
 
 .room-btn__icon svg,
-.room-btn__icon .fox-mark {
+.room-btn__icon .fox-mark,
+.room-btn__icon .category-glyph {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.category-glyph {
+  display: block;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 .room-btn.is-active .room-btn__icon {
@@ -636,13 +650,15 @@
   }
 
   .burrow-map__node svg,
-  .burrow-map__node .fox-mark {
+  .burrow-map__node .fox-mark,
+  .burrow-map__node .category-glyph {
     width: 30px;
     height: 30px;
     color: var(--color-fox-dark);
   }
 
-  .burrow-map__node.is-active svg {
+  .burrow-map__node.is-active svg,
+  .burrow-map__node.is-active .category-glyph {
     color: var(--color-paper);
   }
 
@@ -823,6 +839,7 @@
   z-index: 1;
   width: 44px;
   height: 44px;
+  color: var(--color-ink);
 }
 
 .product-card__body {

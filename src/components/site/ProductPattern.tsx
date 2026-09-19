@@ -1,6 +1,5 @@
-import type { LucideIcon } from 'lucide-react'
-import { Amphora, FlaskConical, Gem, Hammer, Shield, Squirrel } from 'lucide-react'
 import type { ProductCategory } from '../../lib/categories'
+import { assetPath } from '../../lib/assetPath'
 
 interface ProductPatternProps {
   category: ProductCategory
@@ -16,28 +15,30 @@ const BLOB_BY_CATEGORY: Record<ProductCategory, string> = {
   misc: '#ecdfca',
 }
 
-/** Lucide (ISC): gem, hammer, squirrel, shield, amphora, flask — единый stroke-стиль. */
-const ICON_BY_CATEGORY: Record<ProductCategory, LucideIcon> = {
-  jewelry: Gem,
-  forge: Hammer,
-  curiosities: Squirrel,
-  charms: Shield,
-  decor: Amphora,
-  misc: FlaskConical,
-}
-
-/** Иконка категории без подложки — карта норы и чипы фильтра. */
+/**
+ * Иконки комнат норы — SVG из Game-icons.net (CC BY 3.0),
+ * см. public/icons/rooms/ATTRIBUTION.md.
+ * Маска + currentColor: terracotta на креме, светлые на активной кнопке.
+ */
 export function CategoryGlyph({ category, className }: ProductPatternProps) {
-  const Icon = ICON_BY_CATEGORY[category]
-  return <Icon className={className} aria-hidden="true" strokeWidth={2.25} />
+  const url = assetPath(`icons/rooms/${category}.svg`)
+  return (
+    <span
+      className={className ? `category-glyph ${className}` : 'category-glyph'}
+      style={{
+        WebkitMaskImage: `url("${url}")`,
+        maskImage: `url("${url}")`,
+      }}
+      aria-hidden="true"
+    />
+  )
 }
 
 /**
- * Fallback вместо фото: тёплое пятно + иконка Lucide.
+ * Fallback вместо фото: тёплое пятно + иконка категории.
  * При наличии imageUrl карточка показывает фото.
  */
 export function ProductPattern({ category, className }: ProductPatternProps) {
-  const Icon = ICON_BY_CATEGORY[category]
   return (
     <div className={className ? `product-pattern ${className}` : 'product-pattern'} aria-hidden="true">
       <svg className="product-pattern__blob" viewBox="0 0 120 120" aria-hidden="true">
@@ -46,7 +47,7 @@ export function ProductPattern({ category, className }: ProductPatternProps) {
           fill={BLOB_BY_CATEGORY[category]}
         />
       </svg>
-      <Icon className="product-pattern__icon" size={44} strokeWidth={2.25} aria-hidden="true" />
+      <CategoryGlyph category={category} className="product-pattern__icon" />
     </div>
   )
 }

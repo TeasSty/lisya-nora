@@ -10,4 +10,10 @@ const BASE_PATH = process.env.GITHUB_PAGES_BUILD ? '/lisya-nora/' : '/'
 export default defineConfig({
   base: BASE_PATH,
   plugins: [react(), cloudflare()],
+  server: {
+    // Windows: параллельная запись SVG в public/icons ломает chokidar (EBUSY).
+    watch: {
+      ignored: ['**/public/icons/**'],
+    },
+  },
 })

@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { useReveal } from '../../lib/useReveal'
 import { assetPath } from '../../lib/assetPath'
 
@@ -16,10 +17,54 @@ function Shelf({ y }: { y: number }) {
   )
 }
 
+/** Game-icons silhouette as a recolored glyph (alpha mask). */
+function ShelfGlyph({
+  src,
+  x,
+  y,
+  size,
+  fill,
+}: {
+  src: string
+  x: number
+  y: number
+  size: number
+  fill: string
+}) {
+  const reactId = useId().replace(/:/g, '')
+  const maskId = `shelf-mask-${reactId}`
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <defs>
+        <mask
+          id={maskId}
+          maskUnits="userSpaceOnUse"
+          x={0}
+          y={0}
+          width={size}
+          height={size}
+          // alpha: opaque pixels of the icon reveal the fill
+          style={{ maskType: 'alpha' }}
+        >
+          <image href={src} width={size} height={size} preserveAspectRatio="xMidYMid meet" />
+        </mask>
+      </defs>
+      <rect width={size} height={size} fill={fill} mask={`url(#${maskId})`} />
+    </g>
+  )
+}
+
 function ShelfArt() {
+  const vase = assetPath('icons/shelf/porcelain-vase.svg')
+  const earrings = assetPath('icons/shelf/earrings.svg')
+  const puppet = assetPath('icons/shelf/puppet.svg')
+  const owl = assetPath('icons/shelf/owl.svg')
+  const scarab = assetPath('icons/shelf/gold-scarab.svg')
+
   return (
     <svg viewBox="0 0 340 280" role="img" aria-labelledby="shelf-art-title">
-      <title id="shelf-art-title">Полки магазина с керамикой, кованой совой и оберегом</title>
+      <title id="shelf-art-title">Полки магазина: керамика, украшения, кукла, кованая сова и оберег</title>
       <defs>
         <linearGradient id="woodShelf" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#a9663a" />
@@ -32,37 +77,14 @@ function ShelfArt() {
       <Shelf y={70} />
       <Shelf y={190} />
 
-      {/* верхняя полка: керамика + оберег */}
-      <g transform="translate(70,66)">
-        <path
-          d="M-22 0 C-22 -18 -10 -30 0 -30 C10 -30 22 -18 22 0 C22 6 18 10 12 10 L-12 10 C-18 10 -22 6 -22 0 Z"
-          fill="var(--color-fox)"
-        />
-        <ellipse cx="0" cy="-30" rx="9" ry="4" fill="var(--color-fox-dark)" />
-      </g>
-      <g transform="translate(210,40)" stroke="var(--color-ink)" strokeWidth="2" fill="none">
-        <path d="M0 0 L0 22" />
-        <path d="M0 22 L-10 38 L0 34 L10 38 Z" fill="var(--color-gold)" stroke="none" />
-        <circle cx="0" cy="0" r="5" fill="var(--color-gold)" stroke="none" />
-      </g>
+      {/* верхняя полка: керамика + украшения — вся полка в семействе fox */}
+      <ShelfGlyph src={vase} x={46} y={14} size={56} fill="var(--color-fox)" />
+      <ShelfGlyph src={earrings} x={188} y={16} size={52} fill="var(--color-fox-dark)" />
 
-      {/* нижняя полка: домик + ключ + кованая сова */}
-      <g transform="translate(78,168)" stroke="var(--color-ink)" strokeWidth="2.2" fill="none">
-        <path d="M-18 34 V10 L0 -6 L18 10 V34 Z" />
-        <rect x="-6" y="18" width="12" height="16" />
-      </g>
-      <g transform="translate(160,178)" stroke="var(--color-ink)" strokeWidth="2.2" fill="none">
-        <circle cx="0" cy="0" r="8" />
-        <path d="M0 8 V28 M0 20 H8 M0 28 H6" />
-      </g>
-      <g transform="translate(250,170)" fill="var(--color-ink)">
-        <ellipse cx="0" cy="8" rx="18" ry="22" />
-        <circle cx="-7" cy="-10" r="7" />
-        <circle cx="7" cy="-10" r="7" />
-        <circle cx="-7" cy="-10" r="2.5" fill="var(--color-paper)" />
-        <circle cx="7" cy="-10" r="2.5" fill="var(--color-paper)" />
-        <path d="M-3 4 L0 10 L3 4" fill="var(--color-gold)" />
-      </g>
+      {/* нижняя полка: кукла + ковка + оберег */}
+      <ShelfGlyph src={puppet} x={36} y={132} size={56} fill="var(--color-fox-deep)" />
+      <ShelfGlyph src={owl} x={128} y={134} size={52} fill="var(--color-fox-dark)" />
+      <ShelfGlyph src={scarab} x={214} y={136} size={50} fill="var(--color-fox)" />
     </svg>
   )
 }

@@ -11,6 +11,7 @@ import { OrderModal } from '../components/site/OrderModal'
 import { Reviews } from '../components/site/Reviews'
 import { ApiError, fetchProducts } from '../lib/api'
 import { CartProvider, useCart } from '../lib/cart'
+import { notifyLayoutSettled } from '../lib/scrollRestore'
 import { useReveal } from '../lib/useReveal'
 import type { Product } from '../lib/types'
 
@@ -42,6 +43,13 @@ function PublicSiteInner() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (isLoading) return
+    // After catalog mounts / empties, re-pin scroll from a reload restore.
+    const id = requestAnimationFrame(() => notifyLayoutSettled())
+    return () => cancelAnimationFrame(id)
+  }, [isLoading, products])
 
   const checkoutProducts = checkoutItems.map((item) => ({
     ...item.product,
