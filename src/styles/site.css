@@ -1037,9 +1037,10 @@
   color: var(--color-ink);
 }
 
-.modal-panel h3 {
+.modal-panel > h3 {
   font-size: 22px;
   margin-bottom: 4px;
+  /* Space for absolute × — only the form title, not centered success h3 */
   padding-right: 40px;
 }
 
@@ -1383,6 +1384,7 @@
   font-size: 22px;
   line-height: 1.2;
   margin: 0 0 12px;
+  padding-right: 0;
 }
 
 .form-success__body {
