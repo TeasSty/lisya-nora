@@ -1240,18 +1240,24 @@
   position: relative;
 }
 
+.address-suggest__portal {
+  position: fixed;
+  z-index: 400;
+  pointer-events: auto;
+}
+
 .address-suggest__status {
-  margin: 6px 0 0;
+  margin: 0;
+  padding: 10px 12px;
   font-size: 12px;
   color: var(--color-ink-soft);
+  background: var(--color-paper);
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .address-suggest__list {
-  position: absolute;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  top: calc(100% - 4px);
   margin: 0;
   padding: 6px;
   list-style: none;
@@ -1259,7 +1265,7 @@
   border: 1.5px solid var(--color-line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-card);
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
 }
 
