@@ -1079,6 +1079,13 @@
   margin: 4px 0 16px;
 }
 
+.consent-block.is-invalid {
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-fox);
+  border-radius: var(--radius-sm);
+  background: rgba(193, 85, 42, 0.06);
+}
+
 .consent-block.is-invalid .consent-field {
   color: #a13a1a;
 }
@@ -1292,6 +1299,20 @@
 .form-field select:focus {
   outline: none;
   border-color: var(--color-fox);
+}
+
+.form-field input[aria-invalid='true'],
+.form-field textarea[aria-invalid='true'],
+.form-field select[aria-invalid='true'] {
+  border-color: var(--color-fox);
+  box-shadow: 0 0 0 1px var(--color-fox);
+}
+
+.form-field input[aria-invalid='true']:focus,
+.form-field textarea[aria-invalid='true']:focus,
+.form-field select[aria-invalid='true']:focus {
+  border-color: var(--color-fox-dark);
+  box-shadow: 0 0 0 1px var(--color-fox-dark);
 }
 
 .form-field textarea {
@@ -1803,6 +1824,12 @@
   flex: 1;
 }
 
+.site-footer__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .site-footer__links {
   list-style: none;
   margin: 0;
@@ -1810,7 +1837,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 0;
+  gap: 0;
   font-size: 14px;
   line-height: 1.35;
 }
@@ -1827,16 +1854,27 @@
   pointer-events: none;
 }
 
-.site-footer__links a {
+.site-footer__links a,
+.site-footer__place a {
   color: rgba(251, 243, 228, 0.88);
   text-decoration: none;
 }
 
-.site-footer__links a:hover {
+.site-footer__links a:hover,
+.site-footer__place a:hover {
   color: var(--color-gold);
 }
 
+.site-footer__place {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .site-footer__legal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 12.5px;
   line-height: 1.4;
   color: rgba(251, 243, 228, 0.72);
@@ -1844,14 +1882,22 @@
 
 .site-footer__legal p {
   margin: 0;
+}
+
+.site-footer__legal-ids {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.55em;
 }
 
 .site-footer__legal strong {
   color: rgba(251, 243, 228, 0.92);
   font-weight: 700;
+}
+
+.site-footer__legal-address {
+  color: rgba(251, 243, 228, 0.68);
 }
 
 .site-footer__bottom {
@@ -1894,19 +1940,6 @@
 
   .site-footer__legal {
     font-size: 13px;
-  }
-
-  .site-footer__legal p {
-    display: block;
-  }
-
-  .site-footer__legal strong {
-    margin-right: 0.55em;
-  }
-
-  .site-footer__legal span + span::before {
-    content: ' · ';
-    color: rgba(251, 243, 228, 0.4);
   }
 
   .site-footer__bottom {

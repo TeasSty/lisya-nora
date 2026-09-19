@@ -19,10 +19,39 @@ interface OrderModalProps {
 }
 
 const CONSENT_ERROR = 'Нужно согласие на обработку персональных данных'
+const NAME_ERROR = 'Подскажите, как к вам обращаться'
+const PHONE_ERROR = 'Проверьте номер телефона'
+const ADDRESS_ERROR = 'Укажите город, улицу и номер дома'
+const PICKUP_ERROR = 'Укажите полный адрес пункта выдачи Ozon'
 
 type FieldKey = 'name' | 'phone' | 'address' | 'pickupPoint' | 'consent'
 
 type FieldErrors = Partial<Record<FieldKey, string>>
+
+function isValidName(value: string): boolean {
+  return value.trim().length > 0
+}
+
+function isValidPhone(value: string): boolean {
+  const digits = value.trim().replace(/\D/g, '').length
+  return digits >= 10 && digits <= 15
+}
+
+function validateOrderFields(input: {
+  name: string
+  phone: string
+  address: string
+  pickupPoint: string
+  consent: boolean
+}): FieldErrors {
+  const next: FieldErrors = {}
+  if (!isValidName(input.name)) next.name = NAME_ERROR
+  if (!isValidPhone(input.phone)) next.phone = PHONE_ERROR
+  if (!isCompleteAddress(input.address)) next.address = ADDRESS_ERROR
+  if (!isCompletePickupPoint(input.pickupPoint)) next.pickupPoint = PICKUP_ERROR
+  if (!input.consent) next.consent = CONSENT_ERROR
+  return next
+}
 
 export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [name, setName] = useState('')
@@ -94,27 +123,16 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     })
   }
 
+  /** После попытки отправки ошибка снимается только когда поле стало валидным. */
+  function clearErrorIfValid(key: FieldKey, isValid: boolean) {
+    if (isValid) clearFieldError(key)
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setFormError(null)
 
-    const nextErrors: FieldErrors = {}
-    if (!name.trim()) {
-      nextErrors.name = 'Подскажите, как к вам обращаться'
-    }
-    if (phone.trim().replace(/\D/g, '').length < 10 || phone.trim().replace(/\D/g, '').length > 15) {
-      nextErrors.phone = 'Проверьте номер телефона'
-    }
-    if (!isCompleteAddress(address)) {
-      nextErrors.address = 'Укажите город, улицу и номер дома'
-    }
-    if (!isCompletePickupPoint(pickupPoint)) {
-      nextErrors.pickupPoint = 'Укажите полный адрес пункта выдачи Ozon'
-    }
-    if (!consent) {
-      nextErrors.consent = CONSENT_ERROR
-    }
-
+    const nextErrors = validateOrderFields({ name, phone, address, pickupPoint, consent })
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors)
       return
@@ -230,8 +248,9 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   aria-invalid={Boolean(fieldErrors.name)}
                   aria-describedby={fieldErrors.name ? 'order-name-error' : undefined}
                   onChange={(e) => {
-                    setName(e.target.value)
-                    clearFieldError('name')
+                    const next = e.target.value
+                    setName(next)
+                    clearErrorIfValid('name', isValidName(next))
                   }}
                 />
                 {fieldErrors.name && (
@@ -252,8 +271,9 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   aria-invalid={Boolean(fieldErrors.phone)}
                   aria-describedby={fieldErrors.phone ? 'order-phone-error' : undefined}
                   onChange={(e) => {
-                    setPhone(e.target.value)
-                    clearFieldError('phone')
+                    const next = e.target.value
+                    setPhone(next)
+                    clearErrorIfValid('phone', isValidPhone(next))
                   }}
                 />
                 {fieldErrors.phone && (
@@ -277,12 +297,12 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 onChange={(next) => {
                   setAddress(next)
                   setCityFromSuggest(null)
-                  clearFieldError('address')
+                  clearErrorIfValid('address', isCompleteAddress(next))
                 }}
                 onPickSuggestion={(item) => {
                   setAddress(item.label)
                   setCityFromSuggest(item.city)
-                  clearFieldError('address')
+                  clearErrorIfValid('address', isCompleteAddress(item.label))
                 }}
               />
 
@@ -296,8 +316,9 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   aria-invalid={Boolean(fieldErrors.pickupPoint)}
                   aria-describedby={fieldErrors.pickupPoint ? 'order-pvz-error' : undefined}
                   onChange={(e) => {
-                    setPickupPoint(e.target.value)
-                    clearFieldError('pickupPoint')
+                    const next = e.target.value
+                    setPickupPoint(next)
+                    clearErrorIfValid('pickupPoint', isCompletePickupPoint(next))
                   }}
                 />
                 {fieldErrors.pickupPoint && (
@@ -340,8 +361,9 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                     aria-invalid={Boolean(fieldErrors.consent)}
                     aria-describedby={fieldErrors.consent ? `${consentId}-error` : undefined}
                     onChange={(e) => {
-                      setConsent(e.target.checked)
-                      clearFieldError('consent')
+                      const next = e.target.checked
+                      setConsent(next)
+                      clearErrorIfValid('consent', next)
                     }}
                   />
                   <span>

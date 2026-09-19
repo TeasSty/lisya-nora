@@ -1,3 +1,4 @@
+import { parseAddressQuery } from './addressSuggest'
 import { formatOrderItemLine, normalizeAdminOrder } from './orderItems'
 import type { AdminOrder } from './types'
 
@@ -27,9 +28,10 @@ export function formatPickupPointSelection(point: Pick<OzonPvzPoint, 'id' | 'nam
 
 export function isCompleteAddress(value: string): boolean {
   const text = value.trim()
-  if (text.length < 10) return false
-  // Должны быть и буквы, и цифра дома/корпуса — иначе часто пишут только «ул. Ленина»
-  return /[A-Za-zА-Яа-яЁё]/.test(text) && /\d/.test(text)
+  if (text.length < 8) return false
+  const parts = parseAddressQuery(text)
+  // Город + улица + дом — иначе часто пишут только «ул. Ленина» или один город
+  return Boolean(parts.city && parts.streetToken && parts.houseNumber)
 }
 
 export function isCompletePickupPoint(value: string): boolean {

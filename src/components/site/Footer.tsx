@@ -12,7 +12,7 @@ export function Footer() {
           </div>
 
           <div className="site-footer__content">
-            <nav aria-label="Контакты">
+            <nav aria-label="Контакты" className="site-footer__contacts">
               <ul className="site-footer__links">
                 <li>
                   <a href={`tel:${MERCHANT.phoneTel}`}>{MERCHANT.phoneDisplay}</a>
@@ -22,20 +22,20 @@ export function Footer() {
                     ВКонтакте
                   </a>
                 </li>
-                <li>
-                  <a href="#gde-my">{MERCHANT.addressShort}</a>
-                </li>
               </ul>
+              <p className="site-footer__place">
+                <a href="#gde-my">{MERCHANT.addressShort}</a>
+              </p>
             </nav>
 
             <div className="site-footer__legal">
-              <p>
+              <p className="site-footer__legal-ids">
                 <strong>{MERCHANT.legalName}</strong>
                 <span>
                   ИНН {MERCHANT.inn} · ОГРНИП {MERCHANT.ogrnip}
                 </span>
-                <span>{MERCHANT.address}</span>
               </p>
+              <p className="site-footer__legal-address">{MERCHANT.address}</p>
             </div>
           </div>
         </div>
