@@ -25,56 +25,67 @@ function CategoryIcon({ category, stroke = 'var(--color-ink)' }: { category: Pro
 
   switch (category) {
     case 'jewelry':
+      // Брошь / камень в оправе
       return (
         <g {...common}>
-          <path d="M46 40 L60 24 L74 40 L60 62 Z" />
-          <path d="M46 40 L74 40" />
-          <path d="M54 40 L60 24 L66 40" />
-          <path d="M54 40 L60 62" />
-          <path d="M66 40 L60 62" />
+          <circle cx="60" cy="58" r="22" />
+          <circle cx="60" cy="58" r="10" />
+          <path d="M60 20 L60 36" />
+          <path d="M48 28 L60 36 L72 28" />
+          <path d="M52 48 L60 36 L68 48" />
         </g>
       )
     case 'forge':
+      // Молот и наковальня
       return (
         <g {...common}>
-          <path d="M36 72 L52 56 L64 68 L48 84 Z" />
-          <path d="M58 62 L74 46" />
-          <rect x="70" y="30" width="20" height="14" rx="2" transform="rotate(45 80 37)" />
-          <path d="M40 84 L32 92" />
+          <path d="M30 84 H90" />
+          <path d="M40 84 V70 H80 V84" />
+          <path d="M48 70 H72 V58 H48 Z" />
+          <path d="M66 56 L82 34" />
+          <path d="M74 28 H98 V42 H86 Z" />
         </g>
       )
     case 'curiosities':
+      // Лиса в профиль
       return (
         <g {...common}>
-          <path d="M42 30 L36 18 M78 30 L84 18" />
-          <path d="M38 52 C38 34 48 24 60 24 C72 24 82 34 82 52 C82 70 72 82 60 82 C48 82 38 70 38 52 Z" />
-          <circle cx="50" cy="48" r="2.6" fill={stroke} stroke="none" />
-          <circle cx="70" cy="48" r="2.6" fill={stroke} stroke="none" />
-          <path d="M54 62 C57 66 63 66 66 62" />
+          <path d="M38 78 C38 52 48 34 68 34 C86 34 94 48 94 62 C94 78 82 88 66 88 C52 88 38 84 38 78 Z" />
+          <path d="M68 34 L78 16 L86 34" />
+          <path d="M56 34 L48 18 L62 34" />
+          <circle cx="78" cy="56" r="2.8" fill={stroke} stroke="none" />
+          <path d="M94 62 L108 54" />
+          <path d="M70 72 C74 76 82 76 86 70" />
         </g>
       )
     case 'charms':
+      // Талисман / оберег на шнурке
       return (
         <g {...common}>
-          <rect x="38" y="22" width="44" height="60" rx="8" />
-          <path d="M60 40 L64 50 L74 50 L66 57 L69 68 L60 61 L51 68 L54 57 L46 50 L56 50 Z" />
+          <path d="M60 18 C48 18 40 28 40 40 C40 50 48 56 60 62 C72 56 80 50 80 40 C80 28 72 18 60 18 Z" />
+          <path d="M60 62 V92" />
+          <circle cx="60" cy="42" r="8" />
+          <path d="M60 34 V50 M52 42 H68" />
         </g>
       )
     case 'decor':
+      // Ваза
       return (
         <g {...common}>
-          <path d="M38 56 L60 34 L82 56" />
-          <path d="M44 54 L44 80 L76 80 L76 54" />
-          <path d="M56 80 L56 64 L64 64 L64 80" />
+          <path d="M44 36 H76" />
+          <path d="M48 36 C48 44 44 50 42 60 C40 74 46 90 60 90 C74 90 80 74 78 60 C76 50 72 44 72 36" />
+          <path d="M52 28 H68 V36" />
+          <path d="M50 54 H70" />
         </g>
       )
     default:
+      // Флакон / диковинка
       return (
         <g {...common}>
-          <rect x="36" y="42" width="48" height="38" rx="4" />
-          <path d="M36 56 L84 56" />
-          <path d="M60 42 L60 80" />
-          <path d="M48 42 C48 32 54 26 60 26 C66 26 72 32 72 42" />
+          <path d="M52 28 H68 V40" />
+          <path d="M56 18 H64 V28" />
+          <path d="M44 40 H76 V52 C76 78 68 92 60 92 C52 92 44 78 44 52 Z" />
+          <path d="M52 58 H68" />
         </g>
       )
   }

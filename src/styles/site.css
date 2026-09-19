@@ -477,9 +477,23 @@
   flex-direction: column;
   gap: 0;
   position: relative;
-  padding-left: 22px;
-  border-left: 3px dashed var(--color-line);
-  margin-left: 10px;
+  padding-left: 30px;
+  margin-left: 6px;
+}
+
+.burrow__mobile::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-left: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--color-line) 0 6px,
+    transparent 6px 12px
+  );
 }
 
 .burrow__mobile-item {
@@ -490,13 +504,16 @@
 .burrow__mobile-item::before {
   content: '';
   position: absolute;
-  left: -28px;
-  top: 18px;
+  left: -29.5px;
+  top: 50%;
   width: 12px;
   height: 12px;
+  transform: translateY(-50%);
   border-radius: 50%;
   background: var(--color-fox);
   border: 3px solid var(--color-bg);
+  box-sizing: border-box;
+  z-index: 1;
 }
 
 .room-btn {
