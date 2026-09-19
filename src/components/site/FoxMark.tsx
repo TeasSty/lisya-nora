@@ -7,7 +7,7 @@ interface FoxMarkProps {
 }
 
 /**
- * Фирменная эмблема из Logo.pdf: лиса в серпе луны + адрес магазина.
+ * Фирменная эмблема из Logo.pdf: только лиса в серпе луны (без дугового текста).
  * Растровая версия — PDF векторный, но без точной трассировки SVG надёжнее PNG/WebP.
  */
 export function FoxMark({ className, variant = 'dark' }: FoxMarkProps) {
@@ -21,8 +21,8 @@ export function FoxMark({ className, variant = 'dark' }: FoxMarkProps) {
       className={className ? `fox-mark ${className}` : 'fox-mark'}
       src={src}
       alt=""
-      width={92}
-      height={92}
+      width={132}
+      height={132}
       decoding="async"
       aria-hidden="true"
       draggable={false}

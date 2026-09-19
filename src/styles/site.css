@@ -39,8 +39,8 @@
 
 .site-header__brand .fox-mark,
 .fox-mark {
-  width: 92px;
-  height: 92px;
+  width: 132px;
+  height: 132px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
@@ -48,8 +48,8 @@
 
 @media (max-width: 479px) {
   .site-header__brand .fox-mark {
-    width: 72px;
-    height: 72px;
+    width: 104px;
+    height: 104px;
   }
 }
 
@@ -1528,8 +1528,8 @@
 }
 
 .site-footer__brand .fox-mark {
-  width: 96px;
-  height: 96px;
+  width: 128px;
+  height: 128px;
 }
 
 .site-footer__links {
@@ -1624,8 +1624,8 @@
 }
 
 .legal-page__brand .fox-mark {
-  width: 72px;
-  height: 72px;
+  width: 104px;
+  height: 104px;
 }
 
 .legal-page__content {
