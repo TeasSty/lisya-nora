@@ -63,7 +63,7 @@ function ShelfArt() {
   const scarab = assetPath('icons/shelf/gold-scarab.svg')
 
   return (
-    <svg viewBox="0 0 340 280" role="img" aria-labelledby="shelf-art-title">
+    <svg viewBox="0 0 300 280" role="img" aria-labelledby="shelf-art-title">
       <title id="shelf-art-title">Полки магазина: керамика, украшения, кукла, кованая сова и оберег</title>
       <defs>
         <linearGradient id="woodShelf" x1="0" y1="0" x2="0" y2="1">

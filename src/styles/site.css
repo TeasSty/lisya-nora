@@ -381,6 +381,9 @@
   border: 3px solid var(--color-paper);
   box-shadow: 0 10px 24px -12px rgba(43, 32, 25, 0.5);
   color: var(--color-ink);
+  will-change: transform;
+  animation: hero-badge-sway var(--badge-sway-duration, 5.2s) ease-in-out
+    var(--badge-sway-delay, 0s) infinite;
 }
 
 .hero-den__badge svg,
@@ -389,10 +392,30 @@
   height: 24px;
 }
 
+@keyframes hero-badge-sway {
+  0%,
+  100% {
+    transform: rotate(var(--badge-tilt, 0deg)) translateY(0);
+  }
+  40% {
+    transform: rotate(calc(var(--badge-tilt, 0deg) + var(--badge-sway, 3deg)))
+      translateY(calc(-1 * var(--badge-lift, 4px)));
+  }
+  70% {
+    transform: rotate(calc(var(--badge-tilt, 0deg) - var(--badge-sway, 3deg)))
+      translateY(calc(0.35 * var(--badge-lift, 4px)));
+  }
+}
+
 .hero-den__badge--tl {
   top: 12%;
   left: 0;
   background: var(--color-fox-tint);
+  --badge-tilt: -8deg;
+  --badge-sway: 2.5deg;
+  --badge-lift: 5px;
+  --badge-sway-duration: 5.6s;
+  --badge-sway-delay: 0s;
   transform: rotate(-8deg);
 }
 
@@ -400,6 +423,11 @@
   top: 8%;
   right: 0;
   background: #dee2cd;
+  --badge-tilt: 6deg;
+  --badge-sway: 3deg;
+  --badge-lift: 4px;
+  --badge-sway-duration: 4.8s;
+  --badge-sway-delay: 0.7s;
   transform: rotate(6deg);
 }
 
@@ -407,6 +435,11 @@
   bottom: 22%;
   left: 0;
   background: #e4ddc3;
+  --badge-tilt: -4deg;
+  --badge-sway: 2deg;
+  --badge-lift: 3.5px;
+  --badge-sway-duration: 6.2s;
+  --badge-sway-delay: 1.4s;
   transform: rotate(-4deg);
 }
 
@@ -414,7 +447,19 @@
   bottom: 18%;
   right: 0;
   background: #e6d7c2;
+  --badge-tilt: 5deg;
+  --badge-sway: 3.5deg;
+  --badge-lift: 5.5px;
+  --badge-sway-duration: 5.1s;
+  --badge-sway-delay: 0.35s;
   transform: rotate(5deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-den__badge {
+    animation: none;
+    will-change: auto;
+  }
 }
 
 @media (min-width: 900px) {
@@ -1397,13 +1442,15 @@
 .about__art {
   order: -1;
   position: relative;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 18px;
-  justify-items: center;
 }
 
 .about__portrait {
   width: min(100%, 280px);
+  margin-inline: auto;
   aspect-ratio: 4 / 5;
   border-radius: 28px 28px 40% 40%;
   overflow: hidden;
@@ -1420,9 +1467,9 @@
 }
 
 .about__art svg {
-  width: 100%;
-  max-width: 380px;
-  margin: 0 auto;
+  display: block;
+  width: min(100%, 300px);
+  margin-inline: auto;
 }
 
 .about__facts {
