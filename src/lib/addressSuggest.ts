@@ -2,6 +2,7 @@
  * Подсказки адресов по-русски.
  * 1) Nominatim + Accept-Language: ru (основной)
  * 2) Photon — запасной: локализуем город, отбрасываем латиницу
+ * Ранжирование: город из запроса → номер дома → улица.
  */
 
 export interface AddressSuggestion {
@@ -124,6 +125,29 @@ const PLACE_RU: Record<string, string> = {
   tatarstan: 'Республика Татарстан',
 }
 
+/** Известные города (нормализованные) → каноническое имя для сравнения. */
+const KNOWN_CITIES: Array<{ key: string; canonical: string }> = (() => {
+  const map = new Map<string, string>()
+  const add = (raw: string, canonical: string) => {
+    const key = normalizeRu(raw)
+    if (key.length >= 2) map.set(key, canonical)
+  }
+  for (const key of Object.keys(CITY_BIAS)) {
+    add(key, key === 'спб' || key === 'петербург' ? 'санкт-петербург' : key)
+  }
+  for (const ru of Object.values(PLACE_RU)) {
+    if (/область|край|республика/i.test(ru)) continue
+    add(ru, ru)
+  }
+  add('санкт петербург', 'санкт-петербург')
+  add('великий новгород', 'новгород')
+  add('нижний новгород', 'нижний')
+  add('тверь', 'твер')
+  return [...map.entries()]
+    .map(([key, canonical]) => ({ key, canonical: normalizeRu(canonical) }))
+    .sort((a, b) => b.key.length - a.key.length)
+})()
+
 const SKIP_OSM_KEYS = new Set([
   'shop',
   'amenity',
@@ -137,7 +161,27 @@ const SKIP_OSM_KEYS = new Set([
   'aeroway',
 ])
 
-const STREET_PREFIX_RE = /^(ул\.|улица|пр\.|проспект|пер\.|переулок|б-р|бульвар|ш\.|шоссе|наб\.|набережная|пл\.|площадь|проезд|туп\.|тупик)\s+/i
+const STREET_PREFIX_RE =
+  /^(ул\.|улица|пр\.|проспект|пер\.|переулок|б-р|бульвар|ш\.|шоссе|наб\.|набережная|пл\.|площадь|проезд|туп\.|тупик)\s+/i
+
+const STREET_KEYWORD_RE =
+  /^(ул\.?|улица|пр\.?|проспект|пер\.?|переулок|б-р|бульвар|ш\.?|шоссе|наб\.?|набережная|пл\.?|площадь|проезд|туп\.?|тупик|д\.?|дом)$/i
+
+interface QueryParts {
+  city: string | null
+  cityCanonical: string | null
+  streetToken: string | null
+  houseNumber: string | null
+  cityExplicit: boolean
+}
+
+function normalizeRu(value: string): string {
+  return value
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g, 'е')
+    .replace(/[«»"']/g, '')
+    .trim()
+}
 
 function joinParts(parts: Array<string | null | undefined>): string {
   return parts
@@ -191,8 +235,168 @@ function formatStreetLine(road: string, house: string | null): string | null {
   return joinParts([name, house ? `д. ${house}` : null])
 }
 
+function matchKnownCity(text: string): { key: string; canonical: string } | null {
+  const normalized = normalizeRu(text)
+  for (const entry of KNOWN_CITIES) {
+    if (normalized === entry.key || normalized.startsWith(`${entry.key} `)) {
+      return entry
+    }
+  }
+  return null
+}
+
+/**
+ * Разбираем «кострома ленина 101» → город / улица / дом.
+ * Город: известный из списка или кириллическое слово перед улицей.
+ */
+export function parseAddressQuery(query: string): QueryParts {
+  const raw = query.trim()
+  const tokens = normalizeRu(raw)
+    .split(/[\s,]+/)
+    .filter(Boolean)
+
+  let city: string | null = null
+  let cityCanonical: string | null = null
+  let cityExplicit = false
+  let rest = tokens
+
+  if (tokens.length >= 2) {
+    // Двухсловные города: «санкт петербург», «нижний новгород»
+    const two = `${tokens[0]} ${tokens[1]}`
+    const knownTwo = matchKnownCity(two)
+    if (knownTwo && knownTwo.key.includes(' ')) {
+      city = tokens.slice(0, 2).join(' ')
+      cityCanonical = knownTwo.canonical
+      cityExplicit = true
+      rest = tokens.slice(2)
+    } else {
+      const knownOne = matchKnownCity(tokens[0])
+      if (knownOne) {
+        city = tokens[0]
+        cityCanonical = knownOne.canonical
+        cityExplicit = true
+        rest = tokens.slice(1)
+      } else if (
+        hasCyrillic(tokens[0]) &&
+        !STREET_KEYWORD_RE.test(tokens[0]) &&
+        !/^\d/.test(tokens[0])
+      ) {
+        // Ведущий топоним до ключевых слов улицы
+        city = tokens[0]
+        cityCanonical = normalizeRu(tokens[0])
+        cityExplicit = true
+        rest = tokens.slice(1)
+      }
+    }
+  }
+
+  let houseNumber: string | null = null
+  const streetBits: string[] = []
+  for (const token of rest) {
+    if (STREET_KEYWORD_RE.test(token)) continue
+    const house = token.match(/^(\d+[а-яa-z]?)$/i)
+    if (house) {
+      houseNumber = house[1]
+      continue
+    }
+    if (hasCyrillic(token) || /^[a-z]+$/i.test(token)) {
+      streetBits.push(token)
+    }
+  }
+
+  return {
+    city,
+    cityCanonical,
+    streetToken: streetBits.length > 0 ? streetBits.join(' ') : null,
+    houseNumber,
+    cityExplicit,
+  }
+}
+
+function citiesCompatible(queryCanonical: string, resultCity: string | null): boolean {
+  if (!resultCity) return false
+  const result = normalizeRu(resultCity)
+  if (!result) return false
+  if (result === queryCanonical) return true
+  if (result.includes(queryCanonical) || queryCanonical.includes(result)) return true
+  // «твер» ↔ «тверь», «новгород» ↔ «великий новгород»
+  const known = matchKnownCity(resultCity)
+  if (known && known.canonical === queryCanonical) return true
+  return false
+}
+
+function extractHouseFromStreetLine(streetLine: string): string | null {
+  const match = streetLine.match(/\bд\.\s*(\d+[а-яa-z]?)/i)
+  return match ? match[1].toLocaleLowerCase('ru-RU') : null
+}
+
+function scoreSuggestion(item: AddressSuggestion, parts: QueryParts): number {
+  let score = 0
+  const label = normalizeRu(item.label)
+  const street = normalizeRu(item.streetLine)
+  const resultHouse = extractHouseFromStreetLine(item.streetLine)
+
+  if (parts.cityCanonical && parts.cityExplicit) {
+    if (citiesCompatible(parts.cityCanonical, item.city)) {
+      score += 10_000
+    } else {
+      score -= 50_000
+    }
+  }
+
+  if (parts.houseNumber) {
+    const want = parts.houseNumber.toLocaleLowerCase('ru-RU')
+    if (resultHouse === want) score += 5_000
+    else if (resultHouse && resultHouse.startsWith(want)) score += 1_500
+    else if (resultHouse) score -= 2_000
+    else score -= 500
+  }
+
+  if (parts.streetToken) {
+    const token = normalizeRu(parts.streetToken)
+    if (street.includes(token) || label.includes(token)) score += 2_000
+    else score -= 1_000
+  }
+
+  // Предпочитаем полные адреса с улицей
+  if (item.streetLine) score += 50
+  return score
+}
+
+function rankAndFilterSuggestions(
+  items: AddressSuggestion[],
+  query: string,
+): AddressSuggestion[] {
+  const parts = parseAddressQuery(query)
+  const scored = items.map((item) => ({ item, score: scoreSuggestion(item, parts) }))
+
+  if (parts.cityExplicit && parts.cityCanonical) {
+    const inCity = scored.filter((row) => citiesCompatible(parts.cityCanonical!, row.item.city))
+    if (inCity.length > 0) {
+      return inCity
+        .sort((a, b) => b.score - a.score)
+        .map((row) => row.item)
+    }
+    // Нет ни одного результата в указанном городе — не подсовываем чужие города
+    return []
+  }
+
+  return scored
+    .filter((row) => row.score > -40_000)
+    .sort((a, b) => b.score - a.score)
+    .map((row) => row.item)
+}
+
 function biasForQuery(query: string): { lat: number; lon: number } {
-  const lower = query.toLocaleLowerCase('ru-RU')
+  const parts = parseAddressQuery(query)
+  if (parts.cityCanonical) {
+    for (const [city, bias] of Object.entries(CITY_BIAS)) {
+      if (normalizeRu(city) === parts.cityCanonical || parts.cityCanonical.includes(normalizeRu(city))) {
+        return bias
+      }
+    }
+  }
+  const lower = normalizeRu(query)
   for (const [city, bias] of Object.entries(CITY_BIAS)) {
     if (lower.includes(city)) return bias
   }
@@ -249,17 +453,35 @@ function nominatimToSuggestion(item: NominatimItem, index: number): AddressSugge
   }
 }
 
+function buildNominatimSearchUrl(query: string): URL {
+  const parts = parseAddressQuery(query)
+  const url = new URL(NOMINATIM_URL)
+  url.searchParams.set('format', 'jsonv2')
+  url.searchParams.set('addressdetails', '1')
+  url.searchParams.set('limit', '12')
+  url.searchParams.set('countrycodes', 'ru')
+  url.searchParams.set('accept-language', 'ru')
+
+  // Структурированный запрос, когда город явно указан — меньше чужих «Ленина» по области
+  if (parts.cityExplicit && parts.city && parts.streetToken) {
+    const street = parts.houseNumber
+      ? `${parts.streetToken} ${parts.houseNumber}`
+      : parts.streetToken
+    url.searchParams.set('street', street)
+    url.searchParams.set('city', parts.city)
+    url.searchParams.set('country', 'Россия')
+  } else {
+    url.searchParams.set('q', `${query.trim()}, Россия`)
+  }
+
+  return url
+}
+
 async function suggestViaNominatim(
   query: string,
   signal?: AbortSignal,
 ): Promise<AddressSuggestion[]> {
-  const url = new URL(NOMINATIM_URL)
-  url.searchParams.set('q', `${query.trim()}, Россия`)
-  url.searchParams.set('format', 'jsonv2')
-  url.searchParams.set('addressdetails', '1')
-  url.searchParams.set('limit', '8')
-  url.searchParams.set('countrycodes', 'ru')
-  url.searchParams.set('accept-language', 'ru')
+  const url = buildNominatimSearchUrl(query)
 
   const response = await fetch(url.toString(), {
     signal,
@@ -283,7 +505,7 @@ async function suggestViaNominatim(
     seen.add(key)
     results.push(suggestion)
   }
-  return results
+  return rankAndFilterSuggestions(results, query)
 }
 
 function photonToSuggestion(
@@ -345,9 +567,21 @@ async function suggestViaPhoton(
   signal?: AbortSignal,
 ): Promise<AddressSuggestion[]> {
   const bias = biasForQuery(query)
+  const parts = parseAddressQuery(query)
+  // Photon: уточняем запрос городом в конце, чтобы fuzzy по улице не уводил в соседние города
+  const photonQ =
+    parts.cityExplicit && parts.city && parts.streetToken
+      ? joinParts([
+          parts.streetToken,
+          parts.houseNumber,
+          parts.city,
+          'Россия',
+        ])
+      : `${query.trim()}, Россия`
+
   const url = new URL(PHOTON_URL)
-  url.searchParams.set('q', `${query.trim()}, Россия`)
-  url.searchParams.set('limit', '10')
+  url.searchParams.set('q', photonQ)
+  url.searchParams.set('limit', '12')
   url.searchParams.set('lat', String(bias.lat))
   url.searchParams.set('lon', String(bias.lon))
   // Photon не принимает lang=ru — локализуем и фильтруем сами
@@ -375,7 +609,7 @@ async function suggestViaPhoton(
     seen.add(key)
     results.push(suggestion)
   }
-  return results
+  return rankAndFilterSuggestions(results, query)
 }
 
 export async function suggestFullAddresses(
