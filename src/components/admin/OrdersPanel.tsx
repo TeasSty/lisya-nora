@@ -179,15 +179,20 @@ export function OrdersPanel() {
                 </span>
 
                 <div className="order-row__ship">
-                  <p>
-                    <strong>Город:</strong> {order.city?.trim() || '—'}
-                  </p>
-                  <p>
-                    <strong>Адрес:</strong> {order.address?.trim() || '—'}
-                  </p>
-                  <p>
-                    <strong>ПВЗ Ozon:</strong> {order.pickupPoint?.trim() || '—'}
-                  </p>
+                  <dl className="order-row__ship-list">
+                    <div>
+                      <dt>Город</dt>
+                      <dd>{order.city?.trim() || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Адрес</dt>
+                      <dd>{order.address?.trim() || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>ПВЗ Ozon</dt>
+                      <dd>{order.pickupPoint?.trim() || '—'}</dd>
+                    </div>
+                  </dl>
                 </div>
 
                 {order.comment && <p className="order-row__comment">«{order.comment}»</p>}

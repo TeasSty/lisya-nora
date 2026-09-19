@@ -76,7 +76,17 @@ body.nav-open {
 }
 
 [id] {
-  scroll-margin-top: 72px;
+  scroll-margin-top: calc(var(--header-offset, 82px) + env(safe-area-inset-top, 0px));
+}
+
+:root {
+  --header-offset: 82px;
+}
+
+@media (max-width: 479px) {
+  :root {
+    --header-offset: 70px;
+  }
 }
 
 /* Keep scrolling page content in a stacking layer below the sticky header */

@@ -25,7 +25,36 @@ interface Env {
 /** Сжатые data URL в D1 без R2; для продакшена лучше вынести фото в R2. */
 const MAX_IMAGE_URL_CHARS = 700_000
 
+/** Мягкий лимит в памяти изолята; на проде лучше Cloudflare Rate Limiting. */
+const RATE_WINDOWS_MS = 10 * 60 * 1000
+const RATE_ORDERS_MAX = 5
+const RATE_LOGIN_MAX = 10
+
 const app = new Hono<{ Bindings: Env }>()
+
+const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+function clientIp(request: Request): string {
+  return request.headers.get('CF-Connecting-IP')?.trim() || 'unknown'
+}
+
+function checkRateLimit(key: string, max: number): { ok: true } | { ok: false; retryAfterSec: number } {
+  const now = Date.now()
+  const bucket = rateBuckets.get(key)
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOWS_MS })
+    return { ok: true }
+  }
+  if (bucket.count >= max) {
+    return { ok: false, retryAfterSec: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)) }
+  }
+  bucket.count += 1
+  return { ok: true }
+}
+
+function phoneDigitCount(phone: string): number {
+  return phone.replace(/\D/g, '').length
+}
 
 function isHttps(request: Request): boolean {
   return new URL(request.url).protocol === 'https:'
@@ -63,7 +92,30 @@ function parsePriceRub(value: unknown): number | null {
   return Math.round(num)
 }
 
-function parseOrderItems(raw: unknown): OrderItemPayload[] {
+/** Только productId + quantity с клиента; имя/цена подставляются из D1. */
+function parseOrderItemRefs(raw: unknown): Array<{ productId: number; quantity: number }> {
+  if (!Array.isArray(raw)) return []
+  const refs: Array<{ productId: number; quantity: number }> = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue
+    const record = entry as Record<string, unknown>
+    const productId =
+      typeof record.productId === 'number' && Number.isFinite(record.productId)
+        ? Math.round(record.productId)
+        : typeof record.productId === 'string' && /^\d+$/.test(record.productId.trim())
+          ? Number(record.productId.trim())
+          : null
+    if (productId === null || productId <= 0) continue
+    const quantity =
+      typeof record.quantity === 'number' && Number.isFinite(record.quantity) && record.quantity > 0
+        ? Math.min(99, Math.round(record.quantity))
+        : 1
+    refs.push({ productId, quantity })
+  }
+  return refs
+}
+
+function parseStoredOrderItems(raw: unknown): OrderItemPayload[] {
   if (!Array.isArray(raw)) return []
   const items: OrderItemPayload[] = []
   for (const entry of raw) {
@@ -90,11 +142,44 @@ function parseItemsJson(raw: string | null): OrderItemPayload[] | undefined {
   if (!raw) return undefined
   try {
     const parsed = JSON.parse(raw) as unknown
-    const items = parseOrderItems(parsed)
+    const items = parseStoredOrderItems(parsed)
     return items.length > 0 ? items : undefined
   } catch {
     return undefined
   }
+}
+
+async function resolveOrderItemsFromDb(
+  db: D1Database,
+  refs: Array<{ productId: number; quantity: number }>,
+): Promise<{ ok: true; items: OrderItemPayload[] } | { ok: false; error: string }> {
+  if (refs.length === 0) return { ok: false, error: 'Не выбран товар' }
+  if (refs.length > 30) return { ok: false, error: 'Слишком много позиций в заявке' }
+
+  const uniqueIds = [...new Set(refs.map((ref) => ref.productId))]
+  const placeholders = uniqueIds.map(() => '?').join(', ')
+  const { results } = await db
+    .prepare(
+      `SELECT id, name, price_rub FROM products WHERE is_active = 1 AND id IN (${placeholders})`,
+    )
+    .bind(...uniqueIds)
+    .all<{ id: number; name: string; price_rub: number | null }>()
+
+  const byId = new Map(results.map((row) => [row.id, row]))
+  const items: OrderItemPayload[] = []
+  for (const ref of refs) {
+    const row = byId.get(ref.productId)
+    if (!row) {
+      return { ok: false, error: 'Один или несколько товаров недоступны. Обновите каталог и попробуйте снова.' }
+    }
+    items.push({
+      productId: row.id,
+      productName: row.name,
+      priceRub: row.price_rub,
+      quantity: ref.quantity,
+    })
+  }
+  return { ok: true, items }
 }
 
 function toAdminOrder(row: OrderRow) {
@@ -213,6 +298,12 @@ app.get('/api/ozon/pvz', async (c) => {
 })
 
 app.post('/api/orders', async (c) => {
+  const limited = checkRateLimit(`orders:${clientIp(c.req.raw)}`, RATE_ORDERS_MAX)
+  if (!limited.ok) {
+    c.header('Retry-After', String(limited.retryAfterSec))
+    return c.json({ error: 'Слишком много заявок. Подождите немного и попробуйте снова.' }, 429)
+  }
+
   try {
     const body = await c.req.json<{
       name?: unknown
@@ -233,29 +324,23 @@ app.post('/api/orders', async (c) => {
     const pickupPoint = typeof body.pickupPoint === 'string' ? body.pickupPoint.trim() : ''
     const comment = typeof body.comment === 'string' ? body.comment.trim() : ''
 
-    let items = parseOrderItems(body.items)
-    if (items.length === 0) {
-      const legacyName = typeof body.productName === 'string' ? body.productName.trim() : ''
-      if (legacyName) {
-        items = [
-          {
-            productId:
-              typeof body.productId === 'number' && Number.isFinite(body.productId)
-                ? body.productId
-                : null,
-            productName: legacyName,
-            priceRub: null,
-            quantity: 1,
-          },
-        ]
-      }
+    let refs = parseOrderItemRefs(body.items)
+    if (refs.length === 0) {
+      const legacyId =
+        typeof body.productId === 'number' && Number.isFinite(body.productId) && body.productId > 0
+          ? Math.round(body.productId)
+          : typeof body.productId === 'string' && /^\d+$/.test(body.productId.trim())
+            ? Number(body.productId.trim())
+            : null
+      if (legacyId) refs = [{ productId: legacyId, quantity: 1 }]
     }
 
     if (!name || name.length > 120) {
       return c.json({ error: 'Укажите имя' }, 400)
     }
-    if (!phone || phone.length > 40) {
-      return c.json({ error: 'Укажите телефон' }, 400)
+    const digits = phoneDigitCount(phone)
+    if (!phone || phone.length > 40 || digits < 10 || digits > 15) {
+      return c.json({ error: 'Укажите корректный телефон' }, 400)
     }
     if (!city || city.length > 120) {
       return c.json({ error: 'Укажите город получения' }, 400)
@@ -266,15 +351,15 @@ app.post('/api/orders', async (c) => {
     if (!pickupPoint || pickupPoint.length < 12 || pickupPoint.length > 400 || !/\d/.test(pickupPoint)) {
       return c.json({ error: 'Укажите полный адрес пункта выдачи Ozon' }, 400)
     }
-    if (items.length === 0) {
-      return c.json({ error: 'Не выбран товар' }, 400)
-    }
-    if (items.length > 30) {
-      return c.json({ error: 'Слишком много позиций в заявке' }, 400)
-    }
     if (comment.length > 1000) {
       return c.json({ error: 'Комментарий слишком длинный' }, 400)
     }
+
+    const resolved = await resolveOrderItemsFromDb(c.env.DB, refs)
+    if (!resolved.ok) {
+      return c.json({ error: resolved.error }, 400)
+    }
+    const items = resolved.items
 
     const productName = items
       .map((item) =>
@@ -305,6 +390,12 @@ app.post('/api/orders', async (c) => {
 // ---------- Авторизация администратора ----------
 
 app.post('/api/admin/login', async (c) => {
+  const limited = checkRateLimit(`login:${clientIp(c.req.raw)}`, RATE_LOGIN_MAX)
+  if (!limited.ok) {
+    c.header('Retry-After', String(limited.retryAfterSec))
+    return c.json({ error: 'Слишком много попыток входа. Подождите и попробуйте снова.' }, 429)
+  }
+
   try {
     const body = await c.req.json<{ password?: unknown }>()
     const password = typeof body.password === 'string' ? body.password : ''

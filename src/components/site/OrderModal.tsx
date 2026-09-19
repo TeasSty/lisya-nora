@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ApiError, submitOrder } from '../../lib/api'
 import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
-import { isCompleteAddress, isCompletePickupPoint } from '../../lib/ozonShipment'
+import { isCompleteAddress, isCompletePickupPoint, OZON_PVZ_MAP_URL } from '../../lib/ozonShipment'
 import type { Product } from '../../lib/types'
 
 export interface CheckoutProduct extends Product {
@@ -95,7 +95,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     if (!name.trim()) {
       nextErrors.name = 'Подскажите, как к вам обращаться'
     }
-    if (phone.trim().length < 5) {
+    if (phone.trim().replace(/\D/g, '').length < 10 || phone.trim().replace(/\D/g, '').length > 15) {
       nextErrors.phone = 'Проверьте номер телефона'
     }
     if (city.trim().length < 2) {
@@ -306,6 +306,17 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                     {fieldErrors.pickupPoint}
                   </p>
                 )}
+                <div className="pvz-actions">
+                  <a
+                    className="btn btn-ghost btn-sm"
+                    href={OZON_PVZ_MAP_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Открыть карту Ozon
+                  </a>
+                </div>
+                <p className="field-hint">Найдите пункт на карте и вставьте сюда его полный адрес.</p>
               </div>
 
               <div className="form-field">

@@ -89,7 +89,12 @@ export function Header() {
         </div>
       </div>
 
-      <nav id="mobile-nav" className={`site-mobile-nav${isOpen ? ' is-open' : ''}`}>
+      <nav
+        id="mobile-nav"
+        className={`site-mobile-nav${isOpen ? ' is-open' : ''}`}
+        inert={!isOpen ? true : undefined}
+        aria-hidden={!isOpen}
+      >
         <ul className="site-mobile-nav__list">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>

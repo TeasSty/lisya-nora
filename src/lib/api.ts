@@ -92,6 +92,7 @@ export { ApiError }
 export function fetchProducts(): Promise<{ products: Product[] }> {
   if (DEMO_MODE) {
     const products = readDemoProducts()
+      .filter((product) => product.isActive)
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map(({ isActive: _a, sortOrder: _s, createdAt: _c, ...product }) => product)
     return demoDelay({ products }, 350)

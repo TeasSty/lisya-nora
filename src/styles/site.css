@@ -19,6 +19,7 @@
   background: rgba(251, 243, 228, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-line-soft);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .site-header__inner {
@@ -174,11 +175,17 @@
   background: var(--color-paper);
   overflow: hidden;
   max-height: 0;
-  transition: max-height 0.28s ease;
+  visibility: hidden;
+  pointer-events: none;
+  transition: max-height 0.28s ease, visibility 0s linear 0.28s;
 }
 
 .site-mobile-nav.is-open {
   max-height: 320px;
+  visibility: visible;
+  pointer-events: auto;
+  transition: max-height 0.28s ease, visibility 0s;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .site-mobile-nav__list {
@@ -1051,6 +1058,12 @@
   color: var(--color-ink-soft);
 }
 
+.pvz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
 
 /* =========================================================
    Корзина
@@ -1152,6 +1165,7 @@
 .cart-drawer__actions {
   display: grid;
   gap: 10px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .form-field {
