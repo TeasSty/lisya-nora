@@ -7,9 +7,8 @@ export function Footer() {
     <footer className="site-footer">
       <div className="container">
         <div className="site-footer__grid">
-          <div className="site-footer__brand">
+          <div className="site-footer__brand" aria-label={MERCHANT.brandName}>
             <FoxMark />
-            <span>{MERCHANT.brandName}</span>
           </div>
 
           <nav aria-label="Контакты">
@@ -36,10 +35,6 @@ export function Footer() {
             ИНН {MERCHANT.inn} · ОГРНИП {MERCHANT.ogrnip}
             <br />
             {MERCHANT.address}
-          </p>
-          <p>
-            Заявки с сайта — не онлайн-оплата. Свяжемся по телефону {MERCHANT.responsePromise}.
-            Самовывоз: {MERCHANT.addressShort}, {MERCHANT.hours}.
           </p>
         </div>
 

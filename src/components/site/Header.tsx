@@ -46,7 +46,6 @@ export function Header() {
           }}
         >
           <FoxMark />
-          <span>Лисья нора</span>
         </a>
 
         <ul className="site-header__nav">

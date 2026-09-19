@@ -125,9 +125,6 @@ export function CartDrawer() {
                 Очистить корзину
               </button>
             </div>
-            <p className="cart-drawer__note">
-              Без оплаты онлайн — оставляете заявку, и мы свяжемся с вами.
-            </p>
           </>
         )}
       </div>

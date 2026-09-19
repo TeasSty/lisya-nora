@@ -25,27 +25,19 @@
 .admin-topbar__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
   color: var(--color-ink);
 }
 
 .admin-topbar__brand .fox-mark {
-  width: 34px;
-  height: 34px;
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
-}
-
-.admin-topbar__brand span {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1.1;
 }
 
 .admin-topbar__brand small {
   display: block;
-  margin-top: 2px;
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
@@ -545,8 +537,8 @@
 }
 
 .admin-login-card .fox-mark {
-  width: 56px;
-  height: 56px;
+  width: 88px;
+  height: 88px;
   margin: 0 auto 14px;
 }
 

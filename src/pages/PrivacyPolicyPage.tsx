@@ -9,7 +9,6 @@ export function PrivacyPolicyPage() {
         <div className="container legal-page__bar-inner">
           <Link to="/" className="legal-page__brand" aria-label="На главную «Лисья нора»">
             <FoxMark />
-            <span>{MERCHANT.brandName}</span>
           </Link>
           <Link to="/" className="btn btn-ghost btn-sm">
             На сайт
