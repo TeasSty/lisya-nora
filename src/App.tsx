@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { CookieConsent } from './components/site/CookieConsent'
 import { PublicSite } from './pages/PublicSite'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { AdminLogin } from './pages/admin/AdminLogin'
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="*" element={<PublicSite />} />
       </Routes>
+      <CookieConsent />
     </BrowserRouter>
   )
 }
