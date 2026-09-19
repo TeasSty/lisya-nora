@@ -24,17 +24,22 @@ function formatDate(iso: string): string {
   }
 }
 
-/** Нормализует ввод: убирает №/# и пробелы, оставляет цифры для поиска. */
+/** Нормализует ввод: убирает №/# и пробелы. */
 function normalizeIdQuery(raw: string): string {
   return raw.trim().replace(/^[№#]+/, '').replace(/\s+/g, '')
 }
 
-/** Точное совпадение или подстрока (удобно искать по последним цифрам длинного id). */
-function orderMatchesIdQuery(id: number, raw: string): boolean {
+/** Поиск по номеру заявки сайта и по номеру отправления Ozon. */
+function orderMatchesQuery(order: AdminOrder, raw: string): boolean {
   const q = normalizeIdQuery(raw)
   if (!q) return true
-  const idStr = String(id)
-  return idStr === q || idStr.includes(q)
+  const idStr = String(order.id)
+  if (idStr === q || idStr.includes(q)) return true
+  const track = (order.trackingNumber ?? '').replace(/\s+/g, '')
+  if (!track) return false
+  const qLower = q.toLowerCase()
+  const trackLower = track.toLowerCase()
+  return trackLower === qLower || trackLower.includes(qLower)
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -109,9 +114,13 @@ export function OrdersPanel() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, trackingNumber: value } : o)),
       )
-      setCopyNote(`Трек по заявке №${order.id} сохранён`)
+      setCopyNote(
+        value
+          ? `Номер отправления Ozon по заявке №${order.id} сохранён`
+          : `Номер отправления Ozon по заявке №${order.id} очищен`,
+      )
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось сохранить трек')
+      setError(err instanceof ApiError ? err.message : 'Не удалось сохранить номер отправления')
     } finally {
       setBusyId(null)
     }
@@ -120,7 +129,7 @@ export function OrdersPanel() {
   const newCount = orders.filter((order) => order.status === 'new').length
   const hasIdQuery = normalizeIdQuery(idQuery).length > 0
   const filteredOrders = useMemo(
-    () => orders.filter((order) => orderMatchesIdQuery(order.id, idQuery)),
+    () => orders.filter((order) => orderMatchesQuery(order, idQuery)),
     [orders, idQuery],
   )
 
@@ -139,14 +148,13 @@ export function OrdersPanel() {
       {!isLoading && !error && orders.length > 0 && (
         <>
           <div className="order-search">
-            <label htmlFor="order-id-search">Поиск по номеру заявки</label>
+            <label htmlFor="order-id-search">Поиск по № сайта или Ozon</label>
             <input
               id="order-id-search"
               type="search"
-              inputMode="numeric"
               autoComplete="off"
               spellCheck={false}
-              placeholder="Полный номер или последние цифры"
+              placeholder="№ заявки сайта или номер отправления Ozon"
               value={idQuery}
               onChange={(e) => setIdQuery(e.target.value)}
             />
@@ -191,7 +199,7 @@ export function OrdersPanel() {
       {!isLoading && !error && orders.length > 0 && filteredOrders.length === 0 && (
         <div className="admin-empty">
           <strong>Ничего не найдено</strong>
-          Проверьте номер заявки или очистите поиск.
+          Проверьте номер сайта / Ozon или очистите поиск.
         </div>
       )}
 
@@ -199,11 +207,23 @@ export function OrdersPanel() {
         <div className="order-list">
           {filteredOrders.map((order) => {
             const items = normalizeAdminOrder(order).items
+            const ozonNumber = (trackingDrafts[order.id] ?? order.trackingNumber ?? '').trim()
             return (
               <article className="order-row" key={order.id}>
                 <div className="order-row__top">
                   <div className="order-row__heading">
-                    <span className="order-row__id">№{order.id}</span>
+                    <div className="order-row__ids">
+                      {ozonNumber ? (
+                        <span className="order-row__id order-row__id--ozon" title="Номер отправления Ozon">
+                          Ozon №{ozonNumber}
+                        </span>
+                      ) : (
+                        <span className="order-row__id order-row__id--pending">Ozon — ещё нет</span>
+                      )}
+                      <span className="order-row__id order-row__id--site" title="Номер заявки на сайте">
+                        Сайт №{order.id}
+                      </span>
+                    </div>
                     <span className="order-row__name">{order.name}</span>
                   </div>
                   <span className={`status-pill status-pill--${order.status}`}>
@@ -248,7 +268,7 @@ export function OrdersPanel() {
                 {order.comment && <p className="order-row__comment">«{order.comment}»</p>}
 
                 <div className="order-row__track">
-                  <label htmlFor={`track-${order.id}`}>Трек-номер</label>
+                  <label htmlFor={`track-${order.id}`}>Номер отправления Ozon</label>
                   <div className="order-row__track-row">
                     <input
                       id={`track-${order.id}`}
@@ -257,7 +277,7 @@ export function OrdersPanel() {
                       onChange={(e) =>
                         setTrackingDrafts((prev) => ({ ...prev, [order.id]: e.target.value }))
                       }
-                      placeholder="Вставьте трек из Ozon"
+                      placeholder="Например 12345678-0001 — из кабинета Ozon"
                     />
                     <button
                       type="button"

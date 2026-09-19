@@ -261,12 +261,35 @@
   min-width: 0;
 }
 
+.order-row__ids {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
 .order-row__id {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--color-ink-soft);
   font-variant-numeric: tabular-nums;
+}
+
+.order-row__id--ozon {
+  font-size: 14px;
+  color: var(--color-forest-dark);
+}
+
+.order-row__id--pending {
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  opacity: 0.85;
+}
+
+.order-row__id--site {
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .order-row__name {
