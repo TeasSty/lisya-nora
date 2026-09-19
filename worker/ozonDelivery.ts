@@ -13,12 +13,18 @@
 
 const TOKEN_URL = 'https://xapi.ozon.ru/oauth/token'
 const API_BASE = 'https://api-delivery.ozon.ru'
-const CATALOG_CACHE_URL = 'https://lisya-nora.internal/ozon-pvz-catalog-v1'
-const CATALOG_MAX_AGE_SEC = 86_400
+const CATALOG_CACHE_URL = 'https://lisya-nora.internal/ozon-pvz-catalog-v2'
+/** Как часто пытаемся обновить справочник в фоне (сутки). */
+const CATALOG_REFRESH_AFTER_SEC = 86_400
+/** Сколько хранить ответ в Cache API — по сути «пока не вытеснят». */
+const CATALOG_STORE_MAX_AGE_SEC = 365 * 86_400
 const LIST_PAGE_LIMIT = 100
 const INFO_BATCH = 100
 const MAX_LIST_PAGES = 80
 const SEARCH_LIMIT = 40
+
+/** Запасной снимок в памяти изолята, если Cache API пуст/вытеснен. */
+let memoryCatalog: { fetchedAtMs: number; points: OzonPvzPoint[] } | null = null
 
 export interface OzonDeliveryEnv {
   OZON_DELIVERY_CLIENT_ID?: string
@@ -229,28 +235,59 @@ export async function buildOzonPvzCatalog(env: OzonDeliveryEnv): Promise<OzonPvz
   return points
 }
 
-async function readCatalogCache(): Promise<OzonPvzPoint[] | null> {
+interface CatalogCachePayload {
+  fetchedAt: string
+  points: OzonPvzPoint[]
+}
+
+async function readCatalogCache(): Promise<{ points: OzonPvzPoint[]; fetchedAtMs: number } | null> {
   try {
     const cached = await caches.default.match(CATALOG_CACHE_URL)
-    if (!cached) return null
-    const data = (await cached.json()) as { points?: OzonPvzPoint[] } | OzonPvzPoint[]
-    if (Array.isArray(data)) return data
-    if (data && Array.isArray(data.points)) return data.points
-    return null
+    if (cached) {
+      const data = (await cached.json()) as CatalogCachePayload | OzonPvzPoint[]
+      if (Array.isArray(data) && data.length > 0) {
+        const fetchedAtMs = Date.now()
+        memoryCatalog = { fetchedAtMs, points: data }
+        return { points: data, fetchedAtMs }
+      }
+      if (
+        data &&
+        !Array.isArray(data) &&
+        Array.isArray(data.points) &&
+        data.points.length > 0
+      ) {
+        const fetchedAtMs = Date.parse(data.fetchedAt) || Date.now()
+        memoryCatalog = { fetchedAtMs, points: data.points }
+        return { points: data.points, fetchedAtMs }
+      }
+    }
   } catch {
-    return null
+    // fall through to memory
   }
+
+  if (memoryCatalog && memoryCatalog.points.length > 0) {
+    return memoryCatalog
+  }
+  return null
 }
 
 async function writeCatalogCache(points: OzonPvzPoint[]): Promise<void> {
+  if (points.length === 0) return
+
+  const fetchedAt = new Date().toISOString()
+  const fetchedAtMs = Date.parse(fetchedAt) || Date.now()
+  memoryCatalog = { fetchedAtMs, points }
+
   try {
-    const body = JSON.stringify({ fetchedAt: new Date().toISOString(), points })
+    const body = JSON.stringify({ fetchedAt, points } satisfies CatalogCachePayload)
     await caches.default.put(
       CATALOG_CACHE_URL,
       new Response(body, {
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': `public, max-age=${CATALOG_MAX_AGE_SEC}`,
+          // Долгое хранение: поиск продолжает работать со «старым» списком,
+          // даже если суточный лимит Ozon кончился.
+          'Cache-Control': `public, max-age=${CATALOG_STORE_MAX_AGE_SEC}`,
         },
       }),
     )
@@ -261,6 +298,7 @@ async function writeCatalogCache(points: OzonPvzPoint[]): Promise<void> {
 
 export async function refreshOzonPvzCatalog(env: OzonDeliveryEnv): Promise<void> {
   const points = await buildOzonPvzCatalog(env)
+  // Пишем только успешный полный снимок — при ошибке API старый кэш не трогаем.
   await writeCatalogCache(points)
 }
 
@@ -286,9 +324,21 @@ export function filterPvzByCity(points: OzonPvzPoint[], city: string): OzonPvzPo
 }
 
 export type PvzSearchResult =
-  | { ok: true; points: OzonPvzPoint[]; cached: true }
+  | { ok: true; points: OzonPvzPoint[]; cached: true; stale?: boolean }
   | { ok: true; points: []; warming: true }
   | { ok: false; error: string; code: 'not_configured' | 'ozon_error' }
+
+function scheduleCatalogRefresh(
+  env: OzonDeliveryEnv,
+  executionCtx?: { waitUntil: (promise: Promise<unknown>) => void },
+) {
+  if (!executionCtx) return
+  executionCtx.waitUntil(
+    refreshOzonPvzCatalog(env).catch((error) => {
+      console.error('Ozon PVZ catalog refresh failed', error)
+    }),
+  )
+}
 
 export async function searchOzonPvz(
   env: OzonDeliveryEnv,
@@ -301,16 +351,20 @@ export async function searchOzonPvz(
 
   const cached = await readCatalogCache()
   if (cached) {
-    return { ok: true, points: filterPvzByCity(cached, city), cached: true }
+    const ageSec = (Date.now() - cached.fetchedAtMs) / 1000
+    const stale = ageSec > CATALOG_REFRESH_AFTER_SEC
+    if (stale) {
+      scheduleCatalogRefresh(env, executionCtx)
+    }
+    return {
+      ok: true,
+      points: filterPvzByCity(cached.points, city),
+      cached: true,
+      stale,
+    }
   }
 
-  if (executionCtx) {
-    executionCtx.waitUntil(
-      refreshOzonPvzCatalog(env).catch((error) => {
-        console.error('Ozon PVZ catalog refresh failed', error)
-      }),
-    )
-  }
-
+  // Первого снимка ещё нет — прогреваем; поиск пока пустой (есть fallback на карту).
+  scheduleCatalogRefresh(env, executionCtx)
   return { ok: true, points: [], warming: true }
 }

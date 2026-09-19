@@ -29,13 +29,19 @@ const MAX_IMAGE_URL_CHARS = 700_000
 const RATE_WINDOWS_MS = 10 * 60 * 1000
 const RATE_ORDERS_MAX = 5
 const RATE_LOGIN_MAX = 10
+const RATE_OZON_PVZ_MAX = 20
 
 const app = new Hono<{ Bindings: Env }>()
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
 
 function clientIp(request: Request): string {
-  return request.headers.get('CF-Connecting-IP')?.trim() || 'unknown'
+  const cf = request.headers.get('CF-Connecting-IP')?.trim()
+  if (cf) return cf
+  const ray = request.headers.get('CF-Ray')?.trim()
+  if (ray) return `ray:${ray}`
+  const ua = request.headers.get('User-Agent')?.trim().slice(0, 96)
+  return ua ? `ua:${ua}` : 'anon'
 }
 
 function checkRateLimit(key: string, max: number): { ok: true } | { ok: false; retryAfterSec: number } {
@@ -241,6 +247,21 @@ app.get('/api/ozon/pvz/status', (c) => {
 })
 
 app.get('/api/ozon/pvz', async (c) => {
+  const limited = checkRateLimit(`ozon-pvz:${clientIp(c.req.raw)}`, RATE_OZON_PVZ_MAX)
+  if (!limited.ok) {
+    c.header('Retry-After', String(limited.retryAfterSec))
+    return c.json(
+      {
+        error: 'Слишком много запросов к пунктам Ozon. Подождите немного или откройте карту.',
+        code: 'rate_limited',
+        configured: isOzonDeliveryConfigured(c.env),
+        mapUrl: 'https://www.ozon.ru/info/map/',
+        points: [],
+      },
+      429,
+    )
+  }
+
   const city = (c.req.query('city') ?? '').trim()
   if (city.length < 2) {
     return c.json({ error: 'Укажите город для поиска пункта выдачи' }, 400)
@@ -462,9 +483,10 @@ app.patch('/api/admin/orders/:id', async (c) => {
       if (trackingNumber.length > 120) {
         return c.json({ error: 'Слишком длинный трек-номер' }, 400)
       }
-      await c.env.DB.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?')
+      const result = await c.env.DB.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?')
         .bind(trackingNumber, id)
         .run()
+      if (!result.meta.changes) return c.json({ error: 'Заявка не найдена' }, 404)
       return c.json({ ok: true })
     }
 
@@ -473,7 +495,10 @@ app.patch('/api/admin/orders/:id', async (c) => {
       return c.json({ error: 'Некорректный статус' }, 400)
     }
 
-    await c.env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id).run()
+    const result = await c.env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?')
+      .bind(status, id)
+      .run()
+    if (!result.meta.changes) return c.json({ error: 'Заявка не найдена' }, 404)
     return c.json({ ok: true })
   } catch (error) {
     console.error('PATCH /api/admin/orders/:id failed', error)
@@ -565,12 +590,13 @@ app.put('/api/admin/products/:id', async (c) => {
     if (!isValidCategory(category)) return c.json({ error: 'Некорректная категория' }, 400)
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
-    await c.env.DB.prepare(
+    const result = await c.env.DB.prepare(
       'UPDATE products SET name = ?, description = ?, category = ?, image_url = ?, price_rub = ?, is_active = ?, sort_order = ? WHERE id = ?',
     )
       .bind(name, description, category, imageUrl, priceRub, isActive ? 1 : 0, sortOrder, id)
       .run()
 
+    if (!result.meta.changes) return c.json({ error: 'Товар не найден' }, 404)
     return c.json({ ok: true })
   } catch (error) {
     console.error('PUT /api/admin/products/:id failed', error)
@@ -583,7 +609,8 @@ app.delete('/api/admin/products/:id', async (c) => {
     const id = Number(c.req.param('id'))
     if (!Number.isFinite(id)) return c.json({ error: 'Некорректный id' }, 400)
 
-    await c.env.DB.prepare('DELETE FROM products WHERE id = ?').bind(id).run()
+    const result = await c.env.DB.prepare('DELETE FROM products WHERE id = ?').bind(id).run()
+    if (!result.meta.changes) return c.json({ error: 'Товар не найден' }, 404)
     return c.json({ ok: true })
   } catch (error) {
     console.error('DELETE /api/admin/products/:id failed', error)

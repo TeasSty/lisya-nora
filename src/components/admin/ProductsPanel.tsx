@@ -120,7 +120,7 @@ export function ProductsPanel() {
 
     setIsSaving(true)
     try {
-      const payload = { ...form, isActive: true }
+      const payload = { ...form }
       if (editingId === 'new') {
         await createAdminProduct(payload)
       } else if (typeof editingId === 'number') {
@@ -133,6 +133,27 @@ export function ProductsPanel() {
       setFormError(err instanceof ApiError ? err.message : 'Не удалось сохранить товар')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handleToggleActive(product: AdminProduct) {
+    try {
+      await updateAdminProduct(product.id, {
+        name: product.name,
+        description: product.description,
+        category: product.category,
+        imageUrl: product.imageUrl ?? '',
+        priceRub: product.priceRub,
+        isActive: !product.isActive,
+        sortOrder: product.sortOrder,
+      })
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === product.id ? { ...item, isActive: !product.isActive } : item,
+        ),
+      )
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не удалось изменить видимость')
     }
   }
 
@@ -207,6 +228,15 @@ export function ProductsPanel() {
                 onChange={(e) => setForm({ ...form, priceRub: e.target.value === '' ? null : Number(e.target.value) })}
               />
             </div>
+
+            <label className="product-form__active">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+              />
+              <span>Показывать на витрине</span>
+            </label>
 
             <div className="form-field" style={{ margin: 0 }}>
               <label htmlFor="p-description">Описание</label>
@@ -322,7 +352,10 @@ export function ProductsPanel() {
                 )}
                 <div className="product-row__body">
                   <div className="product-row__info">
-                    <strong>{product.name}</strong>
+                    <strong>
+                      {product.name}
+                      {!product.isActive && <span className="product-row__badge">скрыт</span>}
+                    </strong>
                     <span>
                       {CATEGORY_META[product.category].label} · {formatPrice(product.priceRub)}
                     </span>
@@ -330,6 +363,13 @@ export function ProductsPanel() {
                   <div className="product-row__actions">
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(product)}>
                       Изменить
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleToggleActive(product)}
+                    >
+                      {product.isActive ? 'Скрыть' : 'Показать'}
                     </button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDelete(product)}>
                       Удалить

@@ -482,6 +482,23 @@
   gap: 14px;
 }
 
+.product-form__active {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.product-form__active input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-fox);
+  flex-shrink: 0;
+}
+
 @media (min-width: 640px) {
   .product-row {
     grid-template-columns: 72px 1fr auto;

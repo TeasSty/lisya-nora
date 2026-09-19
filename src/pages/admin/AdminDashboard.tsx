@@ -10,15 +10,27 @@ type Tab = 'orders' | 'products'
 export function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('orders')
   const [checkingSession, setCheckingSession] = useState(true)
+  const [authed, setAuthed] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
+    let cancelled = false
     adminSession()
       .then((res) => {
-        if (!res.authenticated) navigate('/admin', { replace: true })
+        if (cancelled) return
+        if (!res.authenticated) {
+          navigate('/admin', { replace: true })
+          return
+        }
+        setAuthed(true)
+        setCheckingSession(false)
       })
-      .catch(() => navigate('/admin', { replace: true }))
-      .finally(() => setCheckingSession(false))
+      .catch(() => {
+        if (!cancelled) navigate('/admin', { replace: true })
+      })
+    return () => {
+      cancelled = true
+    }
   }, [navigate])
 
   async function handleLogout() {
@@ -26,7 +38,7 @@ export function AdminDashboard() {
     navigate('/admin', { replace: true })
   }
 
-  if (checkingSession) {
+  if (checkingSession || !authed) {
     return (
       <div className="admin-shell">
         <p className="admin-checking">Открываем панель…</p>
@@ -61,7 +73,10 @@ export function AdminDashboard() {
           <button
             type="button"
             role="tab"
+            id="admin-tab-orders"
             aria-selected={tab === 'orders'}
+            aria-controls="admin-panel-orders"
+            tabIndex={tab === 'orders' ? 0 : -1}
             className={`chip ${tab === 'orders' ? 'is-active' : ''}`}
             onClick={() => setTab('orders')}
           >
@@ -70,7 +85,10 @@ export function AdminDashboard() {
           <button
             type="button"
             role="tab"
+            id="admin-tab-products"
             aria-selected={tab === 'products'}
+            aria-controls="admin-panel-products"
+            tabIndex={tab === 'products' ? 0 : -1}
             className={`chip ${tab === 'products' ? 'is-active' : ''}`}
             onClick={() => setTab('products')}
           >
@@ -78,7 +96,13 @@ export function AdminDashboard() {
           </button>
         </div>
 
-        {tab === 'orders' ? <OrdersPanel /> : <ProductsPanel />}
+        <div
+          role="tabpanel"
+          id={tab === 'orders' ? 'admin-panel-orders' : 'admin-panel-products'}
+          aria-labelledby={tab === 'orders' ? 'admin-tab-orders' : 'admin-tab-products'}
+        >
+          {tab === 'orders' ? <OrdersPanel /> : <ProductsPanel />}
+        </div>
       </div>
     </div>
   )

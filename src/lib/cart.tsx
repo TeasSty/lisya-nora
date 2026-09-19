@@ -9,6 +9,7 @@ import {
 import type { Product } from './types'
 
 const CART_STORAGE_KEY = 'lisya-nora-cart'
+export const CART_MAX_QUANTITY = 99
 
 export interface CartItem {
   product: Product
@@ -19,6 +20,7 @@ interface CartContextValue {
   items: CartItem[]
   count: number
   addProduct: (product: Product) => void
+  setQuantity: (productId: number, quantity: number) => void
   removeProduct: (productId: number) => void
   clear: () => void
   isOpen: boolean
@@ -35,17 +37,30 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
+function clampQuantity(quantity: number): number {
+  if (!Number.isFinite(quantity) || quantity < 1) return 1
+  return Math.min(CART_MAX_QUANTITY, Math.floor(quantity))
+}
+
 function readStoredCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(CART_STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw) as CartItem[]
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (item) => item && item.product && typeof item.product.id === 'number' && item.quantity > 0,
-    )
+    return parsed
+      .filter((item) => item && item.product && typeof item.product.id === 'number' && item.quantity > 0)
+      .map((item) => ({ ...item, quantity: clampQuantity(item.quantity) }))
   } catch {
     return []
+  }
+}
+
+function writeStoredCart(items: CartItem[]) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+  } catch {
+    // Quota / private mode — корзина остаётся в памяти сессии.
   }
 }
 
@@ -58,7 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([])
 
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+    writeStoredCart(items)
   }, [items])
 
   const value = useMemo<CartContextValue>(() => {
@@ -73,13 +88,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (existing) {
             return prev.map((item) =>
               item.product.id === product.id
-                ? { ...item, quantity: item.quantity + 1, product }
+                ? { ...item, quantity: clampQuantity(item.quantity + 1), product }
                 : item,
             )
           }
           return [...prev, { product, quantity: 1 }]
         })
         setIsOpen(true)
+      },
+      setQuantity(productId, quantity) {
+        const next = clampQuantity(quantity)
+        setItems((prev) =>
+          prev.map((item) => (item.product.id === productId ? { ...item, quantity: next } : item)),
+        )
       },
       removeProduct(productId) {
         setItems((prev) => prev.filter((item) => item.product.id !== productId))
@@ -108,7 +129,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       completeCheckout() {
         setItems([])
         setIsOpen(false)
-        localStorage.setItem(CART_STORAGE_KEY, '[]')
+        writeStoredCart([])
       },
     }
   }, [items, isOpen, checkoutOpen, checkoutItems])

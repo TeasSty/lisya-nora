@@ -5,6 +5,7 @@ import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import { isCompleteAddress, isCompletePickupPoint, OZON_PVZ_MAP_URL } from '../../lib/ozonShipment'
 import type { Product } from '../../lib/types'
+import { AddressSuggestInput } from './AddressSuggestInput'
 
 export interface CheckoutProduct extends Product {
   quantity?: number
@@ -37,6 +38,9 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const titleId = useId()
   const consentId = useId()
 
+  const statusRef = useRef(status)
+  statusRef.current = status
+
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
     panelRef.current?.querySelector<HTMLElement>('input')?.focus()
@@ -44,6 +48,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        if (statusRef.current === 'submitting') return
         onClose()
         return
       }
@@ -142,15 +147,26 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     }
   }
 
+  function requestClose() {
+    if (status === 'submitting') return
+    onClose()
+  }
+
   return (
     <div
       className="modal-overlay"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget) requestClose()
       }}
     >
       <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={panelRef}>
-        <button type="button" className="modal-panel__close" onClick={onClose} aria-label="Закрыть форму">
+        <button
+          type="button"
+          className="modal-panel__close"
+          onClick={requestClose}
+          aria-label="Закрыть форму"
+          disabled={status === 'submitting'}
+        >
           ×
         </button>
 
@@ -244,50 +260,49 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 )}
               </div>
 
-              <div className="form-field">
-                <label htmlFor="order-city">Город получения</label>
-                <input
-                  id="order-city"
-                  type="text"
-                  autoComplete="address-level2"
-                  placeholder="Например: Мурманск"
-                  value={city}
-                  aria-invalid={Boolean(fieldErrors.city)}
-                  aria-describedby={fieldErrors.city ? 'order-city-error' : undefined}
-                  onChange={(e) => {
-                    setCity(e.target.value)
-                    clearFieldError('city')
-                  }}
-                />
-                {fieldErrors.city && (
-                  <p className="form-error form-error--field" id="order-city-error" role="alert">
-                    {fieldErrors.city}
-                  </p>
-                )}
-              </div>
+              <AddressSuggestInput
+                id="order-city"
+                label="Город получения"
+                mode="city"
+                placeholder="Начните вводить город…"
+                autoComplete="address-level2"
+                value={city}
+                invalid={Boolean(fieldErrors.city)}
+                describedBy={fieldErrors.city ? 'order-city-error' : undefined}
+                error={fieldErrors.city ?? null}
+                errorId="order-city-error"
+                onChange={(next) => {
+                  setCity(next)
+                  clearFieldError('city')
+                }}
+              />
 
-              <div className="form-field">
-                <label htmlFor="order-address">Точный адрес (улица, дом)</label>
-                <input
-                  id="order-address"
-                  type="text"
-                  autoComplete="street-address"
-                  placeholder="ул. Ленина, д. 12, кв. 5"
-                  value={address}
-                  aria-invalid={Boolean(fieldErrors.address)}
-                  aria-describedby={fieldErrors.address ? 'order-address-error' : undefined}
-                  onChange={(e) => {
-                    setAddress(e.target.value)
-                    clearFieldError('address')
-                  }}
-                />
-                <p className="field-hint">Нужен полный адрес — без номера дома заявку не отправим.</p>
-                {fieldErrors.address && (
-                  <p className="form-error form-error--field" id="order-address-error" role="alert">
-                    {fieldErrors.address}
-                  </p>
-                )}
-              </div>
+              <AddressSuggestInput
+                id="order-address"
+                label="Точный адрес (улица, дом)"
+                mode="address"
+                cityHint={city}
+                placeholder="ул. Ленина, д. 12"
+                autoComplete="street-address"
+                value={address}
+                invalid={Boolean(fieldErrors.address)}
+                describedBy={fieldErrors.address ? 'order-address-error' : undefined}
+                hint="Выберите адрес из списка или допишите номер дома / квартиру."
+                error={fieldErrors.address ?? null}
+                errorId="order-address-error"
+                onChange={(next) => {
+                  setAddress(next)
+                  clearFieldError('address')
+                }}
+                onPickSuggestion={(item) => {
+                  setAddress(item.label)
+                  if (!city.trim() && item.city) {
+                    setCity(item.city)
+                    clearFieldError('city')
+                  }
+                  clearFieldError('address')
+                }}
+              />
 
               <div className="form-field">
                 <label htmlFor="order-pvz">Пункт выдачи Ozon</label>

@@ -48,10 +48,15 @@ export function normalizeAdminOrder(order: AdminOrder): AdminOrder & { items: Or
 }
 
 export function formatOrderItemLine(item: OrderItem): string {
-  const qty = item.quantity && item.quantity > 1 ? ` × ${item.quantity}` : ''
-  const price =
-    item.priceRub != null
-      ? ` — ${new Intl.NumberFormat('ru-RU').format(item.priceRub)} ₽`
-      : ''
-  return `${item.productName}${qty}${price}`
+  const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1
+  const qty = quantity > 1 ? ` × ${quantity}` : ''
+  if (item.priceRub == null) return `${item.productName}${qty}`
+
+  const lineTotal = item.priceRub * quantity
+  const price = new Intl.NumberFormat('ru-RU').format(lineTotal)
+  if (quantity > 1) {
+    const unit = new Intl.NumberFormat('ru-RU').format(item.priceRub)
+    return `${item.productName}${qty} — ${price} ₽ (${unit} ₽/шт.)`
+  }
+  return `${item.productName} — ${price} ₽`
 }

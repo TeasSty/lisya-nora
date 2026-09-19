@@ -4,7 +4,7 @@ import { FoxMark } from './FoxMark'
 
 export type RoomId = ProductCategory | 'all'
 
-type BurrowRoomId = 'all' | 'jewelry' | 'forge' | 'curiosities' | 'charms' | 'decor'
+type BurrowRoomId = 'all' | 'jewelry' | 'forge' | 'curiosities' | 'charms' | 'decor' | 'misc'
 
 const ROOMS: { id: BurrowRoomId; title: string; short: string }[] = [
   { id: 'all', title: 'Весь магазин', short: 'посмотреть всё сразу' },
@@ -13,16 +13,18 @@ const ROOMS: { id: BurrowRoomId; title: string; short: string }[] = [
   { id: 'curiosities', title: CATEGORY_META.curiosities.room, short: CATEGORY_META.curiosities.short },
   { id: 'charms', title: CATEGORY_META.charms.room, short: CATEGORY_META.charms.short },
   { id: 'decor', title: CATEGORY_META.decor.room, short: CATEGORY_META.decor.short },
+  { id: 'misc', title: CATEGORY_META.misc.room, short: CATEGORY_META.misc.short },
 ]
 
 // Координаты узлов в системе viewBox 0 0 1000 500 (проценты для позиционирования).
 const NODE_POSITION: Record<BurrowRoomId, { left: number; top: number }> = {
-  all: { left: 6, top: 50 },
-  jewelry: { left: 22, top: 20 },
-  forge: { left: 38, top: 78 },
-  curiosities: { left: 54, top: 18 },
-  charms: { left: 70, top: 78 },
-  decor: { left: 90, top: 45 },
+  all: { left: 5, top: 48 },
+  jewelry: { left: 18, top: 18 },
+  forge: { left: 32, top: 78 },
+  curiosities: { left: 48, top: 16 },
+  charms: { left: 62, top: 78 },
+  decor: { left: 78, top: 22 },
+  misc: { left: 93, top: 55 },
 }
 
 function RoomIcon({ id, active = false }: { id: RoomId; active?: boolean }) {
@@ -70,9 +72,9 @@ export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
             aria-hidden="true"
           >
             <path
-              d="M60,250 C130,150 170,100 220,100 C290,100 330,320 380,390
-                 C420,440 500,150 540,100 C610,70 650,320 700,390
-                 C740,450 830,320 880,225"
+              d="M50,240 C120,140 150,90 180,90 C250,90 290,320 320,390
+                 C360,450 430,140 480,80 C550,40 590,320 620,390
+                 C660,450 730,160 780,110 C840,60 880,280 930,275"
               fill="none"
               stroke="var(--color-line)"
               strokeWidth="26"

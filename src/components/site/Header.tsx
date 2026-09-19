@@ -16,12 +16,30 @@ export function Header() {
   useEffect(() => {
     if (!isOpen) return
 
+    const nav = document.getElementById('mobile-nav')
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        return
+      }
+
+      if (event.key !== 'Tab' || !nav) return
+      const focusable = nav.querySelectorAll<HTMLElement>('a[href], button')
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
 
     document.addEventListener('keydown', onKeyDown)
     document.body.classList.add('nav-open')
+    nav?.querySelector<HTMLElement>('a[href], button')?.focus()
 
     return () => {
       document.removeEventListener('keydown', onKeyDown)

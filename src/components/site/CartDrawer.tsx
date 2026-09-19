@@ -1,11 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useCart } from '../../lib/cart'
+import { CART_MAX_QUANTITY, useCart } from '../../lib/cart'
 
 const PRICE_FORMATTER = new Intl.NumberFormat('ru-RU')
 const ANIMATION_MS = 280
 
+function formatLinePrice(unitPrice: number | null, quantity: number): string {
+  if (unitPrice == null) return ''
+  const line = unitPrice * quantity
+  if (quantity > 1) {
+    return ` · ${PRICE_FORMATTER.format(line)} ₽ (${PRICE_FORMATTER.format(unitPrice)} ₽/шт.)`
+  }
+  return ` · ${PRICE_FORMATTER.format(unitPrice)} ₽`
+}
+
 export function CartDrawer() {
-  const { items, isOpen, closeCart, removeProduct, clear, openCheckout, count } = useCart()
+  const { items, isOpen, closeCart, removeProduct, setQuantity, clear, openCheckout, count } =
+    useCart()
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const [mounted, setMounted] = useState(isOpen)
@@ -98,12 +108,28 @@ export function CartDrawer() {
                 <li key={product.id} className="cart-drawer__item">
                   <div className="cart-drawer__item-main">
                     <strong>{product.name}</strong>
-                    <span>
-                      {quantity > 1 ? `${quantity} шт.` : '1 шт.'}
-                      {product.priceRub != null
-                        ? ` · ${PRICE_FORMATTER.format(product.priceRub)} ₽`
-                        : ''}
-                    </span>
+                    <span>{formatLinePrice(product.priceRub, quantity)}</span>
+                    <div className="cart-drawer__qty">
+                      <button
+                        type="button"
+                        className="cart-drawer__qty-btn"
+                        aria-label={`Меньше «${product.name}»`}
+                        disabled={quantity <= 1}
+                        onClick={() => setQuantity(product.id, quantity - 1)}
+                      >
+                        −
+                      </button>
+                      <span aria-live="polite">{quantity}</span>
+                      <button
+                        type="button"
+                        className="cart-drawer__qty-btn"
+                        aria-label={`Больше «${product.name}»`}
+                        disabled={quantity >= CART_MAX_QUANTITY}
+                        onClick={() => setQuantity(product.id, quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <button
                     type="button"
