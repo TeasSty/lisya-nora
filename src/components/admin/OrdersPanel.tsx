@@ -100,17 +100,12 @@ export function OrdersPanel() {
     }
   }
 
-  async function handleCopyOzonField(order: AdminOrder, label: string, value: string) {
-    const ok = await copyText(value)
-    flashOrderNote(
-      order.id,
-      ok ? `«${label}» скопировано — вставьте в Ozon` : 'Не удалось скопировать',
-    )
+  async function handleCopyOzonField(value: string) {
+    await copyText(value)
   }
 
   async function handleCopyOzon(order: AdminOrder) {
-    const ok = await copyText(buildOzonShipmentDocument(order))
-    flashOrderNote(order.id, ok ? 'Весь блок скопирован' : 'Не удалось скопировать')
+    await copyText(buildOzonShipmentDocument(order))
   }
 
   async function handleCopyClientMessage(order: AdminOrder) {
@@ -118,8 +113,7 @@ export function OrdersPanel() {
       ...order,
       trackingNumber: trackingDrafts[order.id] ?? order.trackingNumber ?? '',
     }
-    const ok = await copyText(buildTrackingMessage(withTrack))
-    flashOrderNote(order.id, ok ? 'Сообщение клиенту скопировано' : 'Не удалось скопировать')
+    await copyText(buildTrackingMessage(withTrack))
   }
 
   async function handleSaveTracking(order: AdminOrder) {
@@ -293,7 +287,7 @@ export function OrdersPanel() {
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleCopyOzonField(order, field.label, field.value)}
+                          onClick={() => handleCopyOzonField(field.value)}
                         >
                           Копировать
                         </button>
