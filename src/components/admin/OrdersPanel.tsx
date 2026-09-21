@@ -6,7 +6,7 @@ import {
   updateOrderTracking,
 } from '../../lib/api'
 import { normalizeAdminOrder, formatOrderItemLine } from '../../lib/orderItems'
-import { buildOzonShipmentDocument, buildTrackingMessage } from '../../lib/ozonShipment'
+import { buildOzonShipmentDocument, buildTrackingMessage, getOzonCopyFields } from '../../lib/ozonShipment'
 import type { AdminOrder } from '../../lib/types'
 
 function formatDate(iso: string): string {
@@ -92,9 +92,18 @@ export function OrdersPanel() {
     }
   }
 
+  async function handleCopyOzonField(order: AdminOrder, label: string, value: string) {
+    const ok = await copyText(value)
+    setCopyNote(
+      ok
+        ? `«${label}» по заявке №${order.id} скопировано — вставьте в приложение Ozon`
+        : 'Не удалось скопировать',
+    )
+  }
+
   async function handleCopyOzon(order: AdminOrder) {
     const ok = await copyText(buildOzonShipmentDocument(order))
-    setCopyNote(ok ? `Документ для Ozon по заявке №${order.id} скопирован` : 'Не удалось скопировать')
+    setCopyNote(ok ? `Весь блок по заявке №${order.id} скопирован` : 'Не удалось скопировать')
   }
 
   async function handleCopyClientMessage(order: AdminOrder) {
@@ -267,6 +276,28 @@ export function OrdersPanel() {
 
                 {order.comment && <p className="order-row__comment">«{order.comment}»</p>}
 
+                <div className="order-row__ozon-fields">
+                  <p className="order-row__ozon-fields-title">В приложение Ozon — по полям</p>
+                  <ul className="ozon-copy-list">
+                    {getOzonCopyFields(order).map((field) => (
+                      <li key={`${order.id}-${field.id}`} className="ozon-copy-row">
+                        <div className="ozon-copy-row__text">
+                          <span className="ozon-copy-row__label">{field.label}</span>
+                          {field.hint && <span className="ozon-copy-row__hint">{field.hint}</span>}
+                          <span className="ozon-copy-row__value">{field.value}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => handleCopyOzonField(order, field.label, field.value)}
+                        >
+                          Копировать
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
                 <div className="order-row__track">
                   <label htmlFor={`track-${order.id}`}>Номер отправления Ozon</label>
                   <div className="order-row__track-row">
@@ -291,8 +322,8 @@ export function OrdersPanel() {
                 </div>
 
                 <div className="order-row__actions">
-                  <button type="button" className="btn btn-primary btn-sm" onClick={() => handleCopyOzon(order)}>
-                    Скопировать для Ozon
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleCopyOzon(order)}>
+                    Скопировать всё текстом
                   </button>
                   <button
                     type="button"

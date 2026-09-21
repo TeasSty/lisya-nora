@@ -53,17 +53,87 @@ function itemsDeclaredValue(order: AdminOrder): number | null {
   return hasPrice ? sum : null
 }
 
-/** Текст, который Инна копирует при оформлении отправки в Ozon. */
+/** Адрес ПВЗ без служебного `#id ·` — удобнее вставлять в поиск приложения. */
+export function pickupPointForPaste(raw: string | undefined): string {
+  const text = (raw ?? '').trim()
+  if (!text) return ''
+  return text.replace(/^#\d+\s*·\s*/u, '').trim()
+}
+
+export interface OzonCopyField {
+  id: string
+  /** Как на экране в приложении Ozon. */
+  label: string
+  value: string
+  hint?: string
+}
+
+/**
+ * Поля по шагам приложения Ozon Доставка — копировать по одному,
+ * а не сплошным текстом.
+ */
+export function getOzonCopyFields(order: AdminOrder): OzonCopyField[] {
+  const items = normalizeAdminOrder(order).items
+  const value = itemsDeclaredValue(order)
+  const goods = items.map((item) => formatOrderItemLine(item)).join('; ')
+  const pvz = pickupPointForPaste(order.pickupPoint)
+
+  const fields: OzonCopyField[] = [
+    {
+      id: 'name',
+      label: 'Получатель',
+      value: order.name.trim(),
+      hint: 'Экран контакта / «Куда»',
+    },
+    {
+      id: 'phone',
+      label: 'Телефон',
+      value: order.phone.trim(),
+      hint: 'Туда же, рядом с именем',
+    },
+    {
+      id: 'pvz',
+      label: 'Пункт выдачи',
+      value: pvz,
+      hint: 'Поиск адреса ПВЗ в приложении',
+    },
+    {
+      id: 'value',
+      label: 'Стоимость предметов',
+      value: value != null ? String(value) : '',
+      hint: value != null ? 'Только цифры, без ₽' : 'Уточнить при упаковке',
+    },
+    {
+      id: 'title',
+      label: 'Название заказа',
+      value: goods.slice(0, 120),
+      hint: 'Кратко — что в посылке',
+    },
+  ]
+
+  if (order.comment?.trim()) {
+    fields.push({
+      id: 'comment',
+      label: 'Комментарий',
+      value: order.comment.trim(),
+      hint: 'Необязательно для Ozon',
+    })
+  }
+
+  return fields.filter((field) => field.value.length > 0)
+}
+
+/** Полный текст — запасной вариант, если нужен весь блок сразу. */
 export function buildOzonShipmentDocument(order: AdminOrder): string {
   const items = normalizeAdminOrder(order).items
   const value = itemsDeclaredValue(order)
   const lines = [
-    '=== Данные для Ozon Доставка ===',
+    '=== Данные для Ozon Доставка (по полям приложения) ===',
     `Получатель: ${order.name}`,
     `Телефон: ${order.phone}`,
     `Город: ${order.city?.trim() || '— не указан —'}`,
-    `Точный адрес клиента: ${order.address?.trim() || '— не указан —'}`,
-    `Пункт выдачи Ozon: ${order.pickupPoint?.trim() || '— не указан —'}`,
+    `Адрес клиента: ${order.address?.trim() || '— не указан —'}`,
+    `Пункт выдачи Ozon: ${pickupPointForPaste(order.pickupPoint) || '— не указан —'}`,
     '',
     'Состав посылки:',
     ...items.map((item) => `• ${formatOrderItemLine(item)}`),
@@ -77,7 +147,7 @@ export function buildOzonShipmentDocument(order: AdminOrder): string {
     lines.push('', `Комментарий клиента: ${order.comment.trim()}`)
   }
 
-  lines.push('', `Заявка №${order.id} · ${order.createdAt}`)
+  lines.push('', `Заявка сайта №${order.id} · ${order.createdAt}`)
   return lines.join('\n')
 }
 
