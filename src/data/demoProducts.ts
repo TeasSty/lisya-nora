@@ -3,7 +3,6 @@ import type { Product } from '../lib/types'
 
 // Полный ассортимент VK Market (47 позиций, market.get + anonym token).
 // Витрина без скролла отдаёт только первые 24; остальные — со 2-й страницы API.
-// «Чудо Мишаня» не включён (помечен как ПРОДАН). Старый дубликат «Всячница» (id 13513937) пропущен.
 export const DEMO_PRODUCTS: Product[] = [
   {
     id: 1,
@@ -100,6 +99,20 @@ export const DEMO_PRODUCTS: Product[] = [
   },
   {
     id: 8,
+    name: 'Чудо Мишаня',
+    description: 'Чудо чудное и диво дивное, полностью ручная работа, медвежонок Мишаня. Лапки и голова подвижные , одежда снимается. Ищет только любящую семью.',
+    category: 'dolls',
+    imageUrl: assetPath('images/products/chudo-mishanya.webp'),
+    imageUrls: [
+      assetPath('images/products/chudo-mishanya.webp'),
+      assetPath('images/products/chudo-mishanya-2.webp'),
+      assetPath('images/products/chudo-mishanya-3.webp'),
+      assetPath('images/products/chudo-mishanya-4.webp')
+    ],
+    priceRub: 13000,
+  },
+  {
+    id: 9,
     name: 'Всячница керамика',
     description: 'Керамика ручная работа',
     category: 'ceramics',
@@ -112,7 +125,21 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 16000,
   },
   {
-    id: 9,
+    id: 10,
+    name: 'Всячница керамика',
+    description: 'Всячница из керамики, ручная работа. Очень красивые овечки и козочки, все работы уникальны и прекрасны. Чудесная идея для подарка. Подойдут как фруктовница, конфетница, ваза или кашпо.',
+    category: 'ceramics',
+    imageUrl: assetPath('images/products/vsyachnitsa-ovechki.webp'),
+    imageUrls: [
+      assetPath('images/products/vsyachnitsa-ovechki.webp'),
+      assetPath('images/products/vsyachnitsa-ovechki-2.webp'),
+      assetPath('images/products/vsyachnitsa-ovechki-3.webp'),
+      assetPath('images/products/vsyachnitsa-ovechki-4.webp')
+    ],
+    priceRub: 16000,
+  },
+  {
+    id: 11,
     name: 'Керамика-всячница, символ 2027 года',
     description: 'Интерьерная работа из керамики. Просто потрясающая детализация.',
     category: 'ceramics',
@@ -125,7 +152,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 18500,
   },
   {
-    id: 10,
+    id: 12,
     name: 'Лошадки, керамика',
     description: 'Лошадки керамика для ценителей необычного.',
     category: 'ceramics',
@@ -136,7 +163,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 6500,
   },
   {
-    id: 11,
+    id: 13,
     name: 'Керамические фигурки: драконы и лошади',
     description: 'Исключительно ручная работа, керамика с душой.',
     category: 'ceramics',
@@ -149,7 +176,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 9000,
   },
   {
-    id: 12,
+    id: 14,
     name: 'Керамический конь',
     description: 'Керамическая фигурка коня. Издревле конь считался главным оберегом с жизни человека. Он был другом и защитником. Сейчас же фигура коня дарится тому, кто хочет добиться успеха.',
     category: 'ceramics',
@@ -163,7 +190,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 8000,
   },
   {
-    id: 13,
+    id: 15,
     name: 'Светильник-домик, керамика',
     description: 'Керамический домик светильник , внутри светодиод, светит достаточно ярко и создает в комнате волшебную атмосферу уюта.',
     category: 'ceramics',
@@ -176,7 +203,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 11000,
   },
   {
-    id: 14,
+    id: 16,
     name: 'Домик-светильник, керамика',
     description: 'Светильник домик, ручная работа, керамика. Работает от сети 220 вольт, внутри светодиод. Очень уютный свет, уникальное дизайнерское решение. Около 30 см.',
     category: 'ceramics',
@@ -190,7 +217,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 11800,
   },
   {
-    id: 15,
+    id: 17,
     name: 'Светильник, керамика',
     description: 'Светильник домик, ручная работа, керамика. Работает от сети 220 вольт, внутри светодиод. Очень уютный свет, уникальное дизайнерское решение.',
     category: 'ceramics',
@@ -203,7 +230,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 11800,
   },
   {
-    id: 16,
+    id: 18,
     name: 'Мухомор на удачу',
     description: 'Мухомор 🍄 ручная работа',
     category: 'ceramics',
@@ -216,7 +243,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1700,
   },
   {
-    id: 17,
+    id: 19,
     name: 'Мухомор-колокольчик, керамика',
     description: 'Волшебный мухомор колокольчик, звенит к богатству.',
     category: 'ceramics',
@@ -230,7 +257,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1300,
   },
   {
-    id: 18,
+    id: 20,
     name: 'Желудь, керамика',
     description: 'Желудь издревле носили в кармане, для привлечения удачи.',
     category: 'ceramics',
@@ -244,7 +271,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1200,
   },
   {
-    id: 19,
+    id: 21,
     name: 'Сувенир из керамики',
     description: 'Прекрасный подарок , керамика ручная работа',
     category: 'ceramics',
@@ -257,7 +284,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1200,
   },
   {
-    id: 20,
+    id: 22,
     name: 'Свистулька-кот, глина',
     description: 'Глиняная свистулька котик, ручная работа.',
     category: 'ceramics',
@@ -271,7 +298,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 900,
   },
   {
-    id: 21,
+    id: 23,
     name: 'Панно керамика с деревом',
     description: 'Панно ручная работа, разные сюжеты с природой Карельского перешейка.',
     category: 'ceramics',
@@ -286,7 +313,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 2900,
   },
   {
-    id: 22,
+    id: 24,
     name: 'Уникальные украшения из осколков старинной посуды',
     description: 'Каждая работа уникальна',
     category: 'jewelry',
@@ -301,7 +328,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1100,
   },
   {
-    id: 23,
+    id: 25,
     name: 'Украшения из фрагментов фарфоровой посуды',
     description: 'Потрясающие украшения из битых старинных тарелочек. Это нечто очень особенное, для избранных ценителей.',
     category: 'jewelry',
@@ -315,7 +342,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1100,
   },
   {
-    id: 24,
+    id: 26,
     name: 'Венок из кожаных цветов',
     description: 'Веночек на голову из кожаных цветов. Эксклюзивный аксессуар. Цены от 1800 до 3000 руб.',
     category: 'jewelry',
@@ -329,7 +356,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 3000,
   },
   {
-    id: 25,
+    id: 27,
     name: 'Броши из кожи',
     description: 'Броши ручной работы, кожа. Ассортимент постоянно пополняется. Цены от 900 руб. Средняя цена 1500 руб. Фото по запросу.',
     category: 'jewelry',
@@ -344,7 +371,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1600,
   },
   {
-    id: 26,
+    id: 28,
     name: 'Брошка керамика',
     description: 'Брошка керамическая, ручная работа',
     category: 'jewelry',
@@ -357,7 +384,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 500,
   },
   {
-    id: 27,
+    id: 29,
     name: 'Брошка-брелок',
     description: 'Шикарный мухомор 🍄, для тех кто хочет привлечь деньги.',
     category: 'jewelry',
@@ -371,7 +398,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1500,
   },
   {
-    id: 28,
+    id: 30,
     name: 'Брошки вязаные',
     description: 'Вязаные брошки ручной работы.',
     category: 'jewelry',
@@ -384,7 +411,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1700,
   },
   {
-    id: 29,
+    id: 31,
     name: 'Лягушка Подсказушка',
     description: 'Связанная вручную игрушка , брелок. Лягушка Подсказушка, помогает принимать решения. Спросите у вашего помощника Подсказушки, как поступить и первое что придет вам в голову это и есть верное решение.',
     category: 'jewelry',
@@ -397,7 +424,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1500,
   },
   {
-    id: 30,
+    id: 32,
     name: 'Брелок гномик Выборгский',
     description: 'Связанный вручную, маленький персональный помощник гномик Вилли. Носить с собой , просить о помощи в любой момент, он всегда поможет.',
     category: 'jewelry',
@@ -412,7 +439,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1500,
   },
   {
-    id: 31,
+    id: 33,
     name: 'Сова, ковка',
     description: 'Шикарные цвета побежалости , кованная сова ручной работы. Украсит любой интерьер , очень хорошо впишется в гостиную или кабинет. 29 см в высоту , работа тяжелая , при доставка нужно будет учесть это.',
     category: 'forge',
@@ -426,7 +453,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 6500,
   },
   {
-    id: 32,
+    id: 34,
     name: 'Собака Ева, ковка',
     description: 'Кованая собака Ева. Авторская работа кузнеца.',
     category: 'forge',
@@ -439,7 +466,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 2500,
   },
   {
-    id: 33,
+    id: 35,
     name: '«Мне только спросить», ковка',
     description: 'Кованая авторская работа. Эмоции в металле, проработанные детали и лёгкий юмор. Хорошая идея подарка.',
     category: 'forge',
@@ -453,7 +480,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 25000,
   },
   {
-    id: 34,
+    id: 36,
     name: 'Магические шаманы-лисицы',
     description: 'Необыкновенные работы, полностью подвижные куклы, искусственный мех, стеклянные глаза, лисы принимают любую позу. Размер около 50 см в высоту',
     category: 'dolls',
@@ -467,7 +494,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 22000,
   },
   {
-    id: 35,
+    id: 37,
     name: 'А пони тоже кони',
     description: 'Пони ручной работы. Конечности подвижны, одежда снимается. Ищет своего человека.',
     category: 'dolls',
@@ -481,7 +508,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 13000,
   },
   {
-    id: 36,
+    id: 38,
     name: 'Ворона Каркуша',
     description: 'Ворона Каркуша! Хозяйственная и домовитая, ищет семью чтобы накаркать ей счастье.',
     category: 'dolls',
@@ -496,7 +523,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 2400,
   },
   {
-    id: 37,
+    id: 39,
     name: 'Кролик ручной работы',
     description: 'Сшитый вручную с большой любовью, уютный кролик. Подходит и как интерьерная игрушка и как игрушка для ребенка. Лапки подвижны , ушки сгибаются. Тактильно прекрасен, внешне просто волшебный.',
     category: 'dolls',
@@ -511,7 +538,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 2800,
   },
   {
-    id: 38,
+    id: 40,
     name: 'Игрушка коллекционная — под заказ',
     description: 'Нереально милый медвежонок ищет семью. Сшит вручную, все части тела подвижны. Одежда снимается. Такую игрушку приятно взять в руки, да это и не просто игрушка , это душа мастера в работе.',
     category: 'dolls',
@@ -526,7 +553,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 13500,
   },
   {
-    id: 39,
+    id: 41,
     name: 'Исторические куклы',
     description: 'Кукла в историческом костюме.',
     category: 'dolls',
@@ -539,7 +566,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 4750,
   },
   {
-    id: 40,
+    id: 42,
     name: 'Баба Яга — под заказ',
     description: 'Бабка ежка , самая лучшая на свете женщина',
     category: 'dolls',
@@ -553,7 +580,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 5000,
   },
   {
-    id: 41,
+    id: 43,
     name: 'Семечко вашего будущего дома',
     description: 'Символическое семечко вашего будущего дома. Вы приобретаете домик и начинаете делать добрые дела. Любые добрые дела на ваше усмотрение! Когда дел будет сделано достаточно , дом у вас появится. Вы его купите, построите, унаследуете и т.д. Это может быть дом, дача, квартира или коттедж. Все о чем вы мечтаете или что для вас сейчас символ дома. Чудеса там где в них верят.',
     category: 'seeds',
@@ -566,7 +593,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 500,
   },
   {
-    id: 42,
+    id: 44,
     name: 'Семечко будущего дома (мини)',
     description: 'Символическое семечко вашего будущего дома. Вы приобретаете домик и начинаете делать добрые дела. Любые добрые дела на ваше усмотрение! Когда дел будет сделано достаточно , дом у вас появится. Вы его купите, построите, унаследуете и т.д. Это может быть дом, дача, квартира или коттедж. Все о чем вы мечтаете или что для вас сейчас символ дома. Чудеса там где в них верят.',
     category: 'seeds',
@@ -580,7 +607,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 300,
   },
   {
-    id: 43,
+    id: 45,
     name: 'Семечко вашего будущего дела',
     description: 'Символическое семечко вашего будущего собственного дела, бизнеса. Вы приобретаете мельницу и начинаете делать добрые дела. Любые добрые дела на ваше усмотрение! Когда дел будет сделано достаточно , Ваше собственное дело начнет расти и приносить доходы. Мельница, как символ успешной работы, очень сильный талисман! И помните, дорогу осилит идущий. Чудеса там где в них верят.',
     category: 'seeds',
@@ -595,7 +622,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 700,
   },
   {
-    id: 44,
+    id: 46,
     name: 'Кедр — семейный талисман',
     description: 'Пара из кедра, двое как единое целое. Две половинки связаны между собой кожаным шнурком, как нерушимыми узами любви. Мощный семейный оберег. К каждому изделию прилагается паспорт изделия от мастерской.',
     category: 'wood',
@@ -608,7 +635,7 @@ export const DEMO_PRODUCTS: Product[] = [
     priceRub: 1500,
   },
   {
-    id: 45,
+    id: 47,
     name: 'Духи',
     description: 'Шикарные не на что не похожие ароматы из Карелии. Стойкость 100 лет не меньше :)',
     category: 'perfume',

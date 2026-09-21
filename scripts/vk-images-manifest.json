@@ -567,5 +567,33 @@
     ],
     "category": "dolls",
     "vkId": 13517056
+  },
+  {
+    "base": "chudo-mishanya",
+    "title": "Чудо Мишаня",
+    "priceRub": 13000,
+    "description": "Чудо чудное и диво дивное, полностью ручная работа, медвежонок Мишаня. \nЛапки и голова подвижные , одежда снимается. Ищет только любящую семью.",
+    "images": [
+      "/images/products/chudo-mishanya.webp",
+      "/images/products/chudo-mishanya-2.webp",
+      "/images/products/chudo-mishanya-3.webp",
+      "/images/products/chudo-mishanya-4.webp"
+    ],
+    "category": "dolls",
+    "vkId": 13556087
+  },
+  {
+    "base": "vsyachnitsa-ovechki",
+    "title": "Всячница керамика",
+    "priceRub": 16000,
+    "description": "Всячница из керамики, ручная работа. \nОчень красивые овечки и козочки, все работы уникальны и прекрасны. \nЧудесная идея для подарка. \nПодойдут как фруктовница, конфетница, ваза или кашпо.",
+    "images": [
+      "/images/products/vsyachnitsa-ovechki.webp",
+      "/images/products/vsyachnitsa-ovechki-2.webp",
+      "/images/products/vsyachnitsa-ovechki-3.webp",
+      "/images/products/vsyachnitsa-ovechki-4.webp"
+    ],
+    "category": "ceramics",
+    "vkId": 13513937
   }
 ]

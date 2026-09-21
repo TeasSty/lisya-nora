@@ -55,6 +55,8 @@ const CATEGORY = {
   'keramicheskiy-kon': 'ceramics',
   'semechko-dela': 'seeds',
   'semechko-doma-mini': 'seeds',
+  'chudo-mishanya': 'dolls',
+  'vsyachnitsa-ovechki': 'ceramics',
 }
 
 /** Stable site names (cleaner than raw VK titles). */
@@ -104,6 +106,8 @@ const NAME = {
   'keramicheskiy-kon': 'Керамический конь',
   'semechko-dela': 'Семечко вашего будущего дела',
   'semechko-doma-mini': 'Семечко будущего дома (мини)',
+  'chudo-mishanya': 'Чудо Мишаня',
+  'vsyachnitsa-ovechki': 'Всячница керамика',
 }
 
 const FALLBACK_DESC = {
@@ -122,7 +126,9 @@ const ORDER = [
   'lisy-pape-mashe',
   'gnomik-villi',
   'figurka-moryaka',
+  'chudo-mishanya',
   'vsyachnitsa-keramika',
+  'vsyachnitsa-ovechki',
   'keramika-vsyachnitsa-2027',
   'loshadki-keramika',
   'keramicheskie-figurki',
@@ -211,7 +217,6 @@ import type { Product } from '../lib/types'
 
 // Полный ассортимент VK Market (47 позиций, market.get + anonym token).
 // Витрина без скролла отдаёт только первые 24; остальные — со 2-й страницы API.
-// «Чудо Мишаня» не включён (помечен как ПРОДАН). Старый дубликат «Всячница» (id 13513937) пропущен.
 export const DEMO_PRODUCTS: Product[] = [
 ${blocks.join(',\n')}
 ]

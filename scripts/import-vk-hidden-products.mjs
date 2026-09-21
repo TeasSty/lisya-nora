@@ -20,11 +20,9 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
 /** Already in catalog (by VK id or known slug). */
 const SKIP_IDS = new Set([
   14016777, 14016775, 13961147, 13961130, 13852714, 13852713, 13739028,
-  13556087, // ПРОДАН
   13555640, 13555062, 13555055, 13555049, 13517555, 13517503, 13517468,
   13517449, 13517433, 13517421, 13517363, 13517359, 13517121, 13517115,
   13517108, 13517061,
-  13513937, // older duplicate of Всячница керамика
 ])
 
 /** Upgrade carousels for items already on site with a single photo. */
@@ -34,6 +32,8 @@ const UPGRADE = {
 }
 
 const NEW = {
+  13556087: { base: 'chudo-mishanya', name: 'Чудо Мишаня', category: 'dolls' },
+  13513937: { base: 'vsyachnitsa-ovechki', name: 'Всячница керамика', category: 'ceramics' },
   13517056: { base: 'stranniki', name: 'Странники', category: 'dolls' },
   13517053: { base: 'babka-yozhka-louhi', name: 'Бабка Ёжка и Лоухи', category: 'dolls' },
   13517052: { base: 'lisy-pape-mashe', name: 'Лисы из папье-маше', category: 'dolls' },
