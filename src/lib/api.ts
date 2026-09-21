@@ -1,4 +1,5 @@
-import type { ProductCategory } from './categories'
+import type { CategoryMeta, ProductCategory } from './categories'
+import { DEFAULT_CATEGORIES, slugifyCategoryId } from './categories'
 import { DEMO_MODE } from './config'
 import { DEMO_PRODUCTS } from '../data/demoProducts'
 import { normalizeAdminOrder, summarizeProductNames } from './orderItems'
@@ -9,8 +10,17 @@ class ApiError extends Error {}
 const DEMO_SESSION_KEY = 'lisya-nora-demo-admin'
 const DEMO_PRODUCTS_KEY = 'lisya-nora-demo-products'
 const DEMO_ORDERS_KEY = 'lisya-nora-demo-orders'
+const DEMO_CATEGORIES_KEY = 'lisya-nora-demo-categories'
+const DEMO_CATEGORY_MIGRATION_KEY = 'lisya-nora-demo-cat-v2'
 /** Пароль демо-панели только в бандле; не светим его в UI/README публичного репо. */
 export const DEMO_ADMIN_PASSWORD = 'nora-demo-panel'
+
+const LEGACY_CATEGORY_MAP: Record<string, string> = {
+  curiosities: 'dolls',
+  charms: 'seeds',
+  decor: 'ceramics',
+  misc: 'perfume',
+}
 
 function demoDelay<T>(value: T, ms = 500): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms))
@@ -35,10 +45,74 @@ function toAdminProducts(products: Product[]): AdminProduct[] {
   }))
 }
 
+function seedDemoCategories(): CategoryMeta[] {
+  return DEFAULT_CATEGORIES.map((category) => ({ ...category }))
+}
+
+function readDemoCategories(): CategoryMeta[] {
+  try {
+    const raw = localStorage.getItem(DEMO_CATEGORIES_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as CategoryMeta[]
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+          .filter((item) => item && typeof item.id === 'string' && typeof item.label === 'string')
+          .map((item) => ({
+            id: item.id,
+            room: typeof item.room === 'string' && item.room ? item.room : item.label,
+            label: item.label,
+            short: typeof item.short === 'string' ? item.short : '',
+            sortOrder: typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder) ? item.sortOrder : 0,
+          }))
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  const seeded = seedDemoCategories()
+  localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(seeded))
+  return seeded
+}
+
+function writeDemoCategories(categories: CategoryMeta[]): void {
+  localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(categories))
+}
+
+function migrateDemoProductCategories(products: AdminProduct[]): AdminProduct[] {
+  if (localStorage.getItem(DEMO_CATEGORY_MIGRATION_KEY) === '1') return products
+
+  const byId = new Map(DEMO_PRODUCTS.map((product) => [product.id, product.category]))
+  let changed = false
+  const next = products.map((product) => {
+    const seeded = byId.get(product.id)
+    if (seeded && product.category !== seeded) {
+      changed = true
+      return { ...product, category: seeded }
+    }
+    if (product.category === 'charms' && /кедр/i.test(product.name)) {
+      changed = true
+      return { ...product, category: 'wood' }
+    }
+    const remapped = LEGACY_CATEGORY_MAP[product.category]
+    if (remapped && remapped !== product.category) {
+      changed = true
+      return { ...product, category: remapped }
+    }
+    return product
+  })
+  localStorage.setItem(DEMO_CATEGORY_MIGRATION_KEY, '1')
+  if (changed) writeDemoProducts(next)
+  return next
+}
+
 function readDemoProducts(): AdminProduct[] {
   try {
     const raw = localStorage.getItem(DEMO_PRODUCTS_KEY)
-    if (raw) return JSON.parse(raw) as AdminProduct[]
+    if (raw) {
+      const parsed = JSON.parse(raw) as AdminProduct[]
+      return migrateDemoProductCategories(parsed)
+    }
   } catch {
     /* ignore */
   }
@@ -98,6 +172,13 @@ export function fetchProducts(): Promise<{ products: Product[] }> {
     return demoDelay({ products }, 350)
   }
   return request('/api/products')
+}
+
+export function fetchCategories(): Promise<{ categories: CategoryMeta[] }> {
+  if (DEMO_MODE) {
+    return demoDelay({ categories: readDemoCategories() }, 200)
+  }
+  return request('/api/categories')
 }
 
 export interface OrderPayload {
@@ -355,6 +436,9 @@ export interface ProductInput {
 export function createAdminProduct(payload: ProductInput): Promise<{ ok: true; id: number }> {
   if (DEMO_MODE) {
     requireDemoAuth()
+    if (!readDemoCategories().some((category) => category.id === payload.category)) {
+      throw new ApiError('Некорректная категория')
+    }
     const products = readDemoProducts()
     const id = Date.now()
     products.push({
@@ -375,6 +459,9 @@ export function createAdminProduct(payload: ProductInput): Promise<{ ok: true; i
 export function updateAdminProduct(id: number, payload: ProductInput): Promise<{ ok: true }> {
   if (DEMO_MODE) {
     requireDemoAuth()
+    if (!readDemoCategories().some((category) => category.id === payload.category)) {
+      throw new ApiError('Некорректная категория')
+    }
     const products = readDemoProducts().map((product) =>
       product.id === id
         ? {
@@ -400,4 +487,91 @@ export function deleteAdminProduct(id: number): Promise<{ ok: true }> {
     return demoDelay({ ok: true as const }, 250)
   }
   return request(`/api/admin/products/${id}`, { method: 'DELETE' })
+}
+
+export function fetchAdminCategories(): Promise<{ categories: CategoryMeta[] }> {
+  if (DEMO_MODE) {
+    requireDemoAuth()
+    return demoDelay({ categories: readDemoCategories() }, 250)
+  }
+  return request('/api/admin/categories')
+}
+
+export interface CategoryInput {
+  id?: string
+  room?: string
+  label: string
+  short: string
+  sortOrder: number
+}
+
+export function createAdminCategory(payload: CategoryInput): Promise<{ ok: true; id: string }> {
+  if (DEMO_MODE) {
+    requireDemoAuth()
+    const categories = readDemoCategories()
+    const id = (payload.id?.trim() || slugifyCategoryId(payload.label)).toLowerCase()
+    if (!/^[a-z][a-z0-9-]{1,47}$/.test(id)) {
+      throw new ApiError('Id категории: латиница, цифры и дефис, от 2 символов')
+    }
+    if (categories.some((category) => category.id === id)) {
+      throw new ApiError('Категория с таким id уже есть')
+    }
+    const label = payload.label.trim()
+    if (!label) throw new ApiError('Укажите название категории')
+    const next: CategoryMeta = {
+      id,
+      room: (payload.room?.trim() || label).slice(0, 80),
+      label: label.slice(0, 80),
+      short: payload.short.trim().slice(0, 120),
+      sortOrder: Number.isFinite(payload.sortOrder) ? payload.sortOrder : 0,
+    }
+    writeDemoCategories([...categories, next].sort((a, b) => a.sortOrder - b.sortOrder))
+    return demoDelay({ ok: true as const, id }, 300)
+  }
+  return request('/api/admin/categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateAdminCategory(id: string, payload: CategoryInput): Promise<{ ok: true }> {
+  if (DEMO_MODE) {
+    requireDemoAuth()
+    const categories = readDemoCategories()
+    const index = categories.findIndex((category) => category.id === id)
+    if (index < 0) throw new ApiError('Категория не найдена')
+    const label = payload.label.trim()
+    if (!label) throw new ApiError('Укажите название категории')
+    categories[index] = {
+      ...categories[index],
+      room: (payload.room?.trim() || label).slice(0, 80),
+      label: label.slice(0, 80),
+      short: payload.short.trim().slice(0, 120),
+      sortOrder: Number.isFinite(payload.sortOrder) ? payload.sortOrder : categories[index].sortOrder,
+    }
+    writeDemoCategories(categories.sort((a, b) => a.sortOrder - b.sortOrder))
+    return demoDelay({ ok: true as const }, 300)
+  }
+  return request(`/api/admin/categories/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteAdminCategory(id: string): Promise<{ ok: true }> {
+  if (DEMO_MODE) {
+    requireDemoAuth()
+    const products = readDemoProducts()
+    if (products.some((product) => product.category === id)) {
+      throw new ApiError('Нельзя удалить: в категории есть товары. Сначала перенесите или удалите их.')
+    }
+    const categories = readDemoCategories()
+    const next = categories.filter((category) => category.id !== id)
+    if (next.length === categories.length) {
+      throw new ApiError('Категория не найдена')
+    }
+    writeDemoCategories(next)
+    return demoDelay({ ok: true as const }, 250)
+  }
+  return request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }

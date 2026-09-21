@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CATEGORY_META, CATEGORY_ORDER } from '../../lib/categories'
+import { type CategoryMeta, DEFAULT_CATEGORIES } from '../../lib/categories'
 import type { Product } from '../../lib/types'
 import type { RoomId } from './BurrowMap'
 import { ProductCard } from './ProductCard'
@@ -11,6 +11,7 @@ interface CatalogProps {
   selected: RoomId
   onSelect: (room: RoomId) => void
   onAddToCart: (product: Product) => void
+  categories?: CategoryMeta[]
 }
 
 export function Catalog({
@@ -20,8 +21,13 @@ export function Catalog({
   selected,
   onSelect,
   onAddToCart,
+  categories = DEFAULT_CATEGORIES,
 }: CatalogProps) {
   const [query, setQuery] = useState('')
+  const sorted = useMemo(
+    () => [...categories].sort((a, b) => a.sortOrder - b.sortOrder),
+    [categories],
+  )
 
   const filtered = useMemo(() => {
     const byCategory = selected === 'all' ? products : products.filter((p) => p.category === selected)
@@ -44,15 +50,15 @@ export function Catalog({
           >
             Все
           </button>
-          {CATEGORY_ORDER.map((category) => (
+          {sorted.map((category) => (
             <button
               type="button"
-              key={category}
-              className={`chip ${selected === category ? 'is-active' : ''}`}
-              aria-pressed={selected === category}
-              onClick={() => onSelect(category)}
+              key={category.id}
+              className={`chip ${selected === category.id ? 'is-active' : ''}`}
+              aria-pressed={selected === category.id}
+              onClick={() => onSelect(category.id)}
             >
-              {CATEGORY_META[category].label}
+              {category.label}
             </button>
           ))}
         </div>
@@ -87,7 +93,12 @@ export function Catalog({
       {!isLoading && !loadError && filtered.length > 0 && (
         <div className="catalog__grid">
           {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={onAddToCart}
+              categories={categories}
+            />
           ))}
         </div>
       )}

@@ -1,6 +1,24 @@
-export const PRODUCT_CATEGORIES = ['jewelry', 'forge', 'curiosities', 'charms', 'decor', 'misc'] as const
+export const PRODUCT_CATEGORIES = [
+  'seeds',
+  'ceramics',
+  'forge',
+  'dolls',
+  'jewelry',
+  'perfume',
+  'wood',
+  'candles',
+  'highlights',
+] as const
 
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number]
+export type ProductCategory = string
+
+export interface CategoryRow {
+  id: string
+  label: string
+  room: string
+  short: string
+  sort_order: number
+}
 
 export interface ProductRow {
   id: number

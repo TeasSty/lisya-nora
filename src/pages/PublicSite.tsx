@@ -9,14 +9,16 @@ import { Hero } from '../components/site/Hero'
 import { Location } from '../components/site/Location'
 import { OrderModal } from '../components/site/OrderModal'
 import { Reviews } from '../components/site/Reviews'
-import { ApiError, fetchProducts } from '../lib/api'
+import { ApiError, fetchCategories, fetchProducts } from '../lib/api'
 import { CartProvider, useCart } from '../lib/cart'
+import { DEFAULT_CATEGORIES, type CategoryMeta } from '../lib/categories'
 import { notifyLayoutSettled } from '../lib/scrollRestore'
 import { useReveal } from '../lib/useReveal'
 import type { Product } from '../lib/types'
 
 function PublicSiteInner() {
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<CategoryMeta[]>(DEFAULT_CATEGORIES)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomId>('all')
@@ -26,9 +28,11 @@ function PublicSiteInner() {
   useEffect(() => {
     let cancelled = false
 
-    fetchProducts()
-      .then((data) => {
-        if (!cancelled) setProducts(data.products)
+    Promise.all([fetchProducts(), fetchCategories()])
+      .then(([productData, categoryData]) => {
+        if (cancelled) return
+        setProducts(productData.products)
+        setCategories(categoryData.categories)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -76,7 +80,7 @@ function PublicSiteInner() {
               </p>
             </div>
 
-            <BurrowMap selected={selectedRoom} onSelect={setSelectedRoom} />
+            <BurrowMap selected={selectedRoom} onSelect={setSelectedRoom} categories={categories} />
 
             <div style={{ marginTop: 40 }}>
               <Catalog
@@ -86,6 +90,7 @@ function PublicSiteInner() {
                 selected={selectedRoom}
                 onSelect={setSelectedRoom}
                 onAddToCart={addProduct}
+                categories={categories}
               />
             </div>
           </div>

@@ -1,9 +1,10 @@
 import { useEffect, useId, useState, type ChangeEvent, type FormEvent } from 'react'
-import { CATEGORY_META, CATEGORY_ORDER, type ProductCategory } from '../../lib/categories'
+import { categoryLabel, type CategoryMeta, type ProductCategory } from '../../lib/categories'
 import {
   ApiError,
   createAdminProduct,
   deleteAdminProduct,
+  fetchAdminCategories,
   fetchAdminProducts,
   updateAdminProduct,
   type ProductInput,
@@ -28,6 +29,7 @@ function formatPrice(priceRub: number | null): string {
 
 export function ProductsPanel() {
   const [products, setProducts] = useState<AdminProduct[]>([])
+  const [categories, setCategories] = useState<CategoryMeta[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -42,8 +44,18 @@ export function ProductsPanel() {
   function load() {
     setIsLoading(true)
     setError(null)
-    fetchAdminProducts()
-      .then((res) => setProducts(res.products))
+    Promise.all([fetchAdminProducts(), fetchAdminCategories()])
+      .then(([productRes, categoryRes]) => {
+        setProducts(productRes.products)
+        setCategories(categoryRes.categories)
+        setForm((prev) => {
+          if (categoryRes.categories.some((category) => category.id === prev.category)) return prev
+          return {
+            ...prev,
+            category: categoryRes.categories[0]?.id ?? prev.category,
+          }
+        })
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить товары'))
       .finally(() => setIsLoading(false))
   }
@@ -53,7 +65,10 @@ export function ProductsPanel() {
   }, [])
 
   function startCreate() {
-    setForm(EMPTY_FORM)
+    setForm({
+      ...EMPTY_FORM,
+      category: categories[0]?.id ?? 'jewelry',
+    })
     setFormError(null)
     setImageNote(null)
     setShowUrlField(false)
@@ -199,9 +214,9 @@ export function ProductsPanel() {
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value as ProductCategory })}
                 >
-                  {CATEGORY_ORDER.map((category) => (
-                    <option key={category} value={category}>
-                      {CATEGORY_META[category].label}
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label}
                     </option>
                   ))}
                 </select>
@@ -357,7 +372,7 @@ export function ProductsPanel() {
                       {!product.isActive && <span className="product-row__badge">скрыт</span>}
                     </strong>
                     <span>
-                      {CATEGORY_META[product.category].label} · {formatPrice(product.priceRub)}
+                      {categoryLabel(product.category, categories)} · {formatPrice(product.priceRub)}
                     </span>
                   </div>
                   <div className="product-row__actions">

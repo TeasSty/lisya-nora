@@ -1,31 +1,22 @@
-import { CATEGORY_META, type ProductCategory } from '../../lib/categories'
+import { type CategoryMeta, DEFAULT_CATEGORIES } from '../../lib/categories'
 import { CategoryGlyph } from './ProductPattern'
 import { FoxMark } from './FoxMark'
 
-export type RoomId = ProductCategory | 'all'
+export type RoomId = string
 
-type BurrowRoomId = 'all' | 'jewelry' | 'forge' | 'curiosities' | 'charms' | 'decor' | 'misc'
-
-const ROOMS: { id: BurrowRoomId; title: string; short: string }[] = [
-  { id: 'all', title: 'Весь магазин', short: 'посмотреть всё сразу' },
-  { id: 'jewelry', title: CATEGORY_META.jewelry.room, short: CATEGORY_META.jewelry.short },
-  { id: 'forge', title: CATEGORY_META.forge.room, short: CATEGORY_META.forge.short },
-  { id: 'curiosities', title: CATEGORY_META.curiosities.room, short: CATEGORY_META.curiosities.short },
-  { id: 'charms', title: CATEGORY_META.charms.room, short: CATEGORY_META.charms.short },
-  { id: 'decor', title: CATEGORY_META.decor.room, short: CATEGORY_META.decor.short },
-  { id: 'misc', title: CATEGORY_META.misc.room, short: CATEGORY_META.misc.short },
+/** Позиции узлов вдоль тропы (viewBox 0 0 1000 500 → проценты). */
+const NODE_SLOT: Array<{ left: number; top: number }> = [
+  { left: 4, top: 48 },
+  { left: 14, top: 18 },
+  { left: 24, top: 78 },
+  { left: 34, top: 16 },
+  { left: 44, top: 78 },
+  { left: 54, top: 18 },
+  { left: 64, top: 78 },
+  { left: 74, top: 20 },
+  { left: 84, top: 76 },
+  { left: 94, top: 48 },
 ]
-
-// Координаты узлов в системе viewBox 0 0 1000 500 (проценты для позиционирования).
-const NODE_POSITION: Record<BurrowRoomId, { left: number; top: number }> = {
-  all: { left: 5, top: 48 },
-  jewelry: { left: 18, top: 18 },
-  forge: { left: 32, top: 78 },
-  curiosities: { left: 48, top: 16 },
-  charms: { left: 62, top: 78 },
-  decor: { left: 78, top: 22 },
-  misc: { left: 93, top: 55 },
-}
 
 function RoomIcon({ id, active = false }: { id: RoomId; active?: boolean }) {
   if (id === 'all') return <FoxMark variant={active ? 'light' : 'dark'} />
@@ -35,14 +26,25 @@ function RoomIcon({ id, active = false }: { id: RoomId; active?: boolean }) {
 interface BurrowMapProps {
   selected: RoomId
   onSelect: (room: RoomId) => void
+  categories?: CategoryMeta[]
 }
 
-export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
+export function BurrowMap({ selected, onSelect, categories = DEFAULT_CATEGORIES }: BurrowMapProps) {
+  const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder)
+  const rooms: { id: RoomId; title: string; short: string }[] = [
+    { id: 'all', title: 'Весь магазин', short: 'посмотреть всё сразу' },
+    ...sorted.map((category) => ({
+      id: category.id,
+      title: category.room,
+      short: category.short,
+    })),
+  ]
+
   return (
     <div className="burrow">
       {/* Мобильная композиция: вертикальная тропа по норе */}
       <div className="burrow__mobile">
-        {ROOMS.map((room) => (
+        {rooms.map((room) => (
           <div className="burrow__mobile-item" key={room.id}>
             <button
               type="button"
@@ -72,9 +74,11 @@ export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
             aria-hidden="true"
           >
             <path
-              d="M50,240 C120,140 150,90 180,90 C250,90 290,320 320,390
-                 C360,450 430,140 480,80 C550,40 590,320 620,390
-                 C660,450 730,160 780,110 C840,60 880,280 930,275"
+              d="M40,240 C100,140 120,90 140,90 C200,90 220,320 240,390
+                 C270,450 310,140 340,80 C390,30 420,320 440,390
+                 C470,450 510,140 540,80 C590,30 620,320 640,390
+                 C670,450 710,160 740,110 C790,60 820,280 860,280
+                 C900,280 930,200 960,240"
               fill="none"
               stroke="var(--color-line)"
               strokeWidth="26"
@@ -83,8 +87,8 @@ export function BurrowMap({ selected, onSelect }: BurrowMapProps) {
             />
           </svg>
 
-          {ROOMS.map((room) => {
-            const pos = NODE_POSITION[room.id]
+          {rooms.map((room, index) => {
+            const pos = NODE_SLOT[Math.min(index, NODE_SLOT.length - 1)]
             return (
               <button
                 type="button"

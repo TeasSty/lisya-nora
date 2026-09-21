@@ -1,15 +1,16 @@
-import { CATEGORY_META } from '../../lib/categories'
+import { type CategoryMeta, categoryLabel, DEFAULT_CATEGORIES } from '../../lib/categories'
 import type { Product } from '../../lib/types'
 import { ProductPattern } from './ProductPattern'
 
 interface ProductCardProps {
   product: Product
   onAddToCart: (product: Product) => void
+  categories?: CategoryMeta[]
 }
 
 const PRICE_FORMATTER = new Intl.NumberFormat('ru-RU')
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart, categories = DEFAULT_CATEGORIES }: ProductCardProps) {
   return (
     <article className="product-card">
       <div className="product-card__media">
@@ -21,7 +22,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       </div>
       <div className="product-card__body">
         <div className="product-card__top">
-          <span className="product-card__category">{CATEGORY_META[product.category].label}</span>
+          <span className="product-card__category">{categoryLabel(product.category, categories)}</span>
           {product.priceRub !== null && (
             <span className="product-card__price">{PRICE_FORMATTER.format(product.priceRub)} ₽</span>
           )}

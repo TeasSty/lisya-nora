@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { CategoriesPanel } from '../../components/admin/CategoriesPanel'
 import { OrdersPanel } from '../../components/admin/OrdersPanel'
 import { ProductsPanel } from '../../components/admin/ProductsPanel'
 import { FoxMark } from '../../components/site/FoxMark'
 import { adminLogout, adminSession } from '../../lib/api'
 
-type Tab = 'orders' | 'products'
+type Tab = 'orders' | 'products' | 'categories'
 
 export function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('orders')
@@ -45,6 +46,11 @@ export function AdminDashboard() {
       </div>
     )
   }
+
+  const panelId =
+    tab === 'orders' ? 'admin-panel-orders' : tab === 'products' ? 'admin-panel-products' : 'admin-panel-categories'
+  const tabId =
+    tab === 'orders' ? 'admin-tab-orders' : tab === 'products' ? 'admin-tab-products' : 'admin-tab-categories'
 
   return (
     <div className="admin-shell">
@@ -97,14 +103,24 @@ export function AdminDashboard() {
           >
             Товары
           </button>
+          <button
+            type="button"
+            role="tab"
+            id="admin-tab-categories"
+            aria-selected={tab === 'categories'}
+            aria-controls="admin-panel-categories"
+            tabIndex={tab === 'categories' ? 0 : -1}
+            className={`chip ${tab === 'categories' ? 'is-active' : ''}`}
+            onClick={() => setTab('categories')}
+          >
+            Категории
+          </button>
         </div>
 
-        <div
-          role="tabpanel"
-          id={tab === 'orders' ? 'admin-panel-orders' : 'admin-panel-products'}
-          aria-labelledby={tab === 'orders' ? 'admin-tab-orders' : 'admin-tab-products'}
-        >
-          {tab === 'orders' ? <OrdersPanel /> : <ProductsPanel />}
+        <div role="tabpanel" id={panelId} aria-labelledby={tabId}>
+          {tab === 'orders' && <OrdersPanel />}
+          {tab === 'products' && <ProductsPanel />}
+          {tab === 'categories' && <CategoriesPanel />}
         </div>
       </div>
     </div>

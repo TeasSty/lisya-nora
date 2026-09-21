@@ -38,14 +38,14 @@ function HeroStage() {
       <CategoryBadge label="Украшения" className="hero-den__badge--tl">
         <CategoryGlyph category="jewelry" />
       </CategoryBadge>
-      <CategoryBadge label="Обереги" className="hero-den__badge--tr">
-        <CategoryGlyph category="charms" />
+      <CategoryBadge label="Домики-семена" className="hero-den__badge--tr">
+        <CategoryGlyph category="seeds" />
       </CategoryBadge>
       <CategoryBadge label="Кузница" className="hero-den__badge--bl">
         <CategoryGlyph category="forge" />
       </CategoryBadge>
-      <CategoryBadge label="Зверята" className="hero-den__badge--br">
-        <CategoryGlyph category="curiosities" />
+      <CategoryBadge label="Куклы" className="hero-den__badge--br">
+        <CategoryGlyph category="dolls" />
       </CategoryBadge>
     </div>
   )

@@ -6,9 +6,9 @@ import {
 } from './ozonDelivery.js'
 import {
   PRODUCT_CATEGORIES,
+  type CategoryRow,
   type OrderItemPayload,
   type OrderRow,
-  type ProductCategory,
   type ProductRow,
 } from './types.js'
 
@@ -207,8 +207,24 @@ function toAdminOrder(row: OrderRow) {
   }
 }
 
-function isValidCategory(value: unknown): value is ProductCategory {
-  return typeof value === 'string' && (PRODUCT_CATEGORIES as readonly string[]).includes(value)
+function toPublicCategory(row: CategoryRow) {
+  return {
+    id: row.id,
+    label: row.label,
+    room: row.room,
+    short: row.short,
+    sortOrder: row.sort_order,
+  }
+}
+
+async function categoryExists(db: D1Database, id: string): Promise<boolean> {
+  const row = await db.prepare('SELECT id FROM categories WHERE id = ?').bind(id).first<{ id: string }>()
+  if (row) return true
+  return (PRODUCT_CATEGORIES as readonly string[]).includes(id)
+}
+
+async function isValidCategory(db: D1Database, value: unknown): Promise<boolean> {
+  return typeof value === 'string' && value.length > 0 && value.length <= 48 && (await categoryExists(db, value))
 }
 
 function normalizeImageUrl(value: unknown): string | null | { error: string } {
@@ -236,6 +252,29 @@ app.get('/api/products', async (c) => {
   } catch (error) {
     console.error('GET /api/products failed', error)
     return c.json({ error: 'Не удалось загрузить каталог' }, 500)
+  }
+})
+
+app.get('/api/categories', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      'SELECT id, label, room, short, sort_order FROM categories ORDER BY sort_order ASC, id ASC',
+    ).all<CategoryRow>()
+    if (results.length > 0) {
+      return c.json({ categories: results.map(toPublicCategory) })
+    }
+    return c.json({
+      categories: PRODUCT_CATEGORIES.map((id, index) => ({
+        id,
+        label: id,
+        room: id,
+        short: '',
+        sortOrder: (index + 1) * 10,
+      })),
+    })
+  } catch (error) {
+    console.error('GET /api/categories failed', error)
+    return c.json({ error: 'Не удалось загрузить категории' }, 500)
   }
 })
 
@@ -458,6 +497,8 @@ app.use('/api/admin/orders/*', requireAuth)
 app.use('/api/admin/orders', requireAuth)
 app.use('/api/admin/products/*', requireAuth)
 app.use('/api/admin/products', requireAuth)
+app.use('/api/admin/categories/*', requireAuth)
+app.use('/api/admin/categories', requireAuth)
 
 app.get('/api/admin/orders', async (c) => {
   try {
@@ -543,7 +584,7 @@ app.post('/api/admin/products', async (c) => {
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
 
     if (!name || name.length > 200) return c.json({ error: 'Укажите название товара' }, 400)
-    if (!isValidCategory(category)) return c.json({ error: 'Некорректная категория' }, 400)
+    if (!(await isValidCategory(c.env.DB, category))) return c.json({ error: 'Некорректная категория' }, 400)
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     const result = await c.env.DB.prepare(
@@ -587,7 +628,7 @@ app.put('/api/admin/products/:id', async (c) => {
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
 
     if (!name || name.length > 200) return c.json({ error: 'Укажите название товара' }, 400)
-    if (!isValidCategory(category)) return c.json({ error: 'Некорректная категория' }, 400)
+    if (!(await isValidCategory(c.env.DB, category))) return c.json({ error: 'Некорректная категория' }, 400)
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     const result = await c.env.DB.prepare(
@@ -615,6 +656,129 @@ app.delete('/api/admin/products/:id', async (c) => {
   } catch (error) {
     console.error('DELETE /api/admin/products/:id failed', error)
     return c.json({ error: 'Не удалось удалить товар' }, 500)
+  }
+})
+
+app.get('/api/admin/categories', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      'SELECT id, label, room, short, sort_order FROM categories ORDER BY sort_order ASC, id ASC',
+    ).all<CategoryRow>()
+    return c.json({ categories: results.map(toPublicCategory) })
+  } catch (error) {
+    console.error('GET /api/admin/categories failed', error)
+    return c.json({ error: 'Не удалось загрузить категории' }, 500)
+  }
+})
+
+app.post('/api/admin/categories', async (c) => {
+  try {
+    const body = await c.req.json<{
+      id?: unknown
+      label?: unknown
+      room?: unknown
+      short?: unknown
+      sortOrder?: unknown
+    }>()
+
+    const label = typeof body.label === 'string' ? body.label.trim() : ''
+    const room =
+      typeof body.room === 'string' && body.room.trim() ? body.room.trim() : label
+    const short = typeof body.short === 'string' ? body.short.trim() : ''
+    const sortOrder =
+      typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? Math.round(body.sortOrder) : 0
+    let id = typeof body.id === 'string' ? body.id.trim().toLowerCase() : ''
+    if (!id && label) {
+      id = label
+        .toLowerCase()
+        .replace(/[^a-z0-9а-яё]+/gi, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 48)
+    }
+
+    if (!label || label.length > 80) return c.json({ error: 'Укажите название категории' }, 400)
+    if (!/^[a-z][a-z0-9-]{1,47}$/.test(id)) {
+      return c.json({ error: 'Id категории: латиница, цифры и дефис, от 2 символов' }, 400)
+    }
+    if (room.length > 80) return c.json({ error: 'Слишком длинное название комнаты' }, 400)
+    if (short.length > 120) return c.json({ error: 'Слишком длинное описание' }, 400)
+
+    try {
+      await c.env.DB.prepare(
+        'INSERT INTO categories (id, label, room, short, sort_order) VALUES (?, ?, ?, ?, ?)',
+      )
+        .bind(id, label, room, short, sortOrder)
+        .run()
+    } catch (error) {
+      console.error('POST /api/admin/categories insert failed', error)
+      return c.json({ error: 'Категория с таким id уже есть' }, 400)
+    }
+
+    return c.json({ ok: true, id })
+  } catch (error) {
+    console.error('POST /api/admin/categories failed', error)
+    return c.json({ error: 'Не удалось создать категорию' }, 500)
+  }
+})
+
+app.put('/api/admin/categories/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    if (!id) return c.json({ error: 'Некорректный id' }, 400)
+
+    const body = await c.req.json<{
+      label?: unknown
+      room?: unknown
+      short?: unknown
+      sortOrder?: unknown
+    }>()
+
+    const label = typeof body.label === 'string' ? body.label.trim() : ''
+    const room =
+      typeof body.room === 'string' && body.room.trim() ? body.room.trim() : label
+    const short = typeof body.short === 'string' ? body.short.trim() : ''
+    const sortOrder =
+      typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? Math.round(body.sortOrder) : 0
+
+    if (!label || label.length > 80) return c.json({ error: 'Укажите название категории' }, 400)
+    if (room.length > 80) return c.json({ error: 'Слишком длинное название комнаты' }, 400)
+    if (short.length > 120) return c.json({ error: 'Слишком длинное описание' }, 400)
+
+    const result = await c.env.DB.prepare(
+      'UPDATE categories SET label = ?, room = ?, short = ?, sort_order = ? WHERE id = ?',
+    )
+      .bind(label, room, short, sortOrder, id)
+      .run()
+
+    if (!result.meta.changes) return c.json({ error: 'Категория не найдена' }, 404)
+    return c.json({ ok: true })
+  } catch (error) {
+    console.error('PUT /api/admin/categories/:id failed', error)
+    return c.json({ error: 'Не удалось обновить категорию' }, 500)
+  }
+})
+
+app.delete('/api/admin/categories/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    if (!id) return c.json({ error: 'Некорректный id' }, 400)
+
+    const used = await c.env.DB.prepare('SELECT id FROM products WHERE category = ? LIMIT 1')
+      .bind(id)
+      .first<{ id: number }>()
+    if (used) {
+      return c.json(
+        { error: 'Нельзя удалить: в категории есть товары. Сначала перенесите или удалите их.' },
+        400,
+      )
+    }
+
+    const result = await c.env.DB.prepare('DELETE FROM categories WHERE id = ?').bind(id).run()
+    if (!result.meta.changes) return c.json({ error: 'Категория не найдена' }, 404)
+    return c.json({ ok: true })
+  } catch (error) {
+    console.error('DELETE /api/admin/categories/:id failed', error)
+    return c.json({ error: 'Не удалось удалить категорию' }, 500)
   }
 })
 
