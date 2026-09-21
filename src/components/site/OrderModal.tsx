@@ -64,7 +64,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const [consent, setConsent] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'done'>('idle')
+  const [status, setStatus] = useState<'idle' | 'review' | 'submitting' | 'done'>('idle')
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const consentId = useId()
@@ -72,14 +72,23 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   const statusRef = useRef(status)
   statusRef.current = status
 
+  const resolvedCity =
+    cityFromSuggest?.trim() || extractCityFromFullAddress(address) || 'не указан'
+
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
-    panelRef.current?.querySelector<HTMLElement>('input')?.focus()
+    if (status === 'idle') {
+      panelRef.current?.querySelector<HTMLElement>('input')?.focus()
+    }
     document.body.style.overflow = 'hidden'
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         if (statusRef.current === 'submitting') return
+        if (statusRef.current === 'review') {
+          setStatus('idle')
+          return
+        }
         onClose()
         return
       }
@@ -112,7 +121,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
       document.removeEventListener('keydown', onKeyDown)
       previouslyFocused?.focus()
     }
-  }, [onClose])
+  }, [onClose, status])
 
   function clearFieldError(key: FieldKey) {
     setFieldErrors((prev) => {
@@ -128,7 +137,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     if (isValid) clearFieldError(key)
   }
 
-  async function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setFormError(null)
 
@@ -145,16 +154,31 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     }
 
     setFieldErrors({})
+    setStatus('review')
+  }
+
+  async function confirmAndSend() {
+    setFormError(null)
+
+    const nextErrors = validateOrderFields({ name, phone, address, pickupPoint, consent })
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
+      setStatus('idle')
+      return
+    }
+
+    if (products.length === 0) {
+      setFormError('Добавьте хотя бы один товар')
+      setStatus('idle')
+      return
+    }
+
     setStatus('submitting')
-    const city =
-      cityFromSuggest?.trim() ||
-      extractCityFromFullAddress(address) ||
-      'не указан'
     try {
       await submitOrder({
         name: name.trim(),
         phone: phone.trim(),
-        city,
+        city: resolvedCity,
         address: address.trim(),
         pickupPoint: pickupPoint.trim(),
         comment: comment.trim(),
@@ -163,7 +187,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
       setStatus('done')
       onSuccess?.()
     } catch (err) {
-      setStatus('idle')
+      setStatus('review')
       setFormError(err instanceof ApiError ? err.message : 'Не удалось отправить заявку')
     }
   }
@@ -212,6 +236,87 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
             <button type="button" className="btn btn-ghost btn-sm form-success__close" onClick={onClose}>
               Закрыть
             </button>
+          </div>
+        ) : status === 'review' || status === 'submitting' ? (
+          <div className="order-review">
+            <h3 id={titleId}>Проверьте данные</h3>
+            <p className="modal-panel__hint">
+              Если что-то неверно — вернитесь и поправьте. После подтверждения заявка уйдёт в магазин.
+            </p>
+
+            <dl className="order-review__list">
+              <div>
+                <dt>Товары</dt>
+                <dd>
+                  <ul className="order-review__products">
+                    {products.map((product) => (
+                      <li key={product.id}>
+                        {formatOrderItemLine({
+                          productId: product.id,
+                          productName: product.name,
+                          priceRub: product.priceRub,
+                          quantity: product.quantity ?? 1,
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+              <div>
+                <dt>Имя</dt>
+                <dd>{name.trim()}</dd>
+              </div>
+              <div>
+                <dt>Телефон</dt>
+                <dd>{phone.trim()}</dd>
+              </div>
+              <div>
+                <dt>Город</dt>
+                <dd>{resolvedCity}</dd>
+              </div>
+              <div>
+                <dt>Адрес</dt>
+                <dd>{address.trim()}</dd>
+              </div>
+              <div>
+                <dt>ПВЗ Ozon</dt>
+                <dd>{pickupPoint.trim()}</dd>
+              </div>
+              {comment.trim() && (
+                <div>
+                  <dt>Комментарий</dt>
+                  <dd>{comment.trim()}</dd>
+                </div>
+              )}
+            </dl>
+
+            {formError && (
+              <p className="form-error" role="alert">
+                {formError}
+              </p>
+            )}
+
+            <div className="order-review__actions">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={status === 'submitting'}
+                onClick={() => {
+                  setFormError(null)
+                  setStatus('idle')
+                }}
+              >
+                Изменить
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={status === 'submitting'}
+                onClick={() => void confirmAndSend()}
+              >
+                {status === 'submitting' ? 'Отправляем…' : 'Всё верно, отправить'}
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -386,8 +491,8 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                 </p>
               )}
 
-              <button type="submit" className="btn btn-primary" disabled={status === 'submitting'} style={{ width: '100%' }}>
-                {status === 'submitting' ? 'Отправляем…' : 'Отправить заявку'}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                Проверить и отправить
               </button>
             </form>
           </>
