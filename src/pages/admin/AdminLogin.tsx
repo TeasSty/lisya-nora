@@ -46,8 +46,9 @@ export function AdminLogin() {
     <div className="admin-login-page">
       <div className="admin-login-card">
         <FoxMark />
-        <h1>Панель «Лисьей норы»</h1>
-        <p className="lead">Вход только для сотрудников магазина</p>
+        <p className="admin-login-eyebrow">Лисья нора · Выборг</p>
+        <h1>Панель магазина</h1>
+        <p className="lead">Вход только для сотрудников</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-field">

@@ -51,7 +51,10 @@ export function AdminDashboard() {
       <header className="admin-topbar">
         <Link to="/" className="admin-topbar__brand" aria-label="На сайт «Лисья нора»">
           <FoxMark />
-          <small>Панель администратора</small>
+          <span className="admin-topbar__brand-text">
+            <strong>Лисья нора</strong>
+            <small>Панель администратора</small>
+          </span>
         </Link>
         <div className="admin-topbar__actions">
           <Link to="/" className="btn btn-ghost btn-sm">
