@@ -61,7 +61,7 @@ Workers + D1 (инструкция ниже, раздел «Деплой backend
 │   ├── lib/                  API-клиент, категории, типы, хук useReveal
 │   └── styles/                CSS публичного сайта и админки
 ├── public/images/products/  Оптимизированные фото товаров (WebP, локально)
-├── public/images/fox-liisa.webp  Фото рыжей лисы (Frida Lannerström / Unsplash License)
+├── public/images/fox-liisa.webp  Иллюстрация лисы с листьями (hero / о магазине)
 ├── scripts/optimize-images.mjs  Ресайз + конвертация фото в WebP (sharp)
 ├── worker/                   Backend (Cloudflare Worker, Hono)
 │   ├── index.ts               Все API-маршруты
@@ -287,8 +287,6 @@ npm run deploy
 
 ## Атрибуция
 
-Фото рыжей лисы на первом экране и в блоке «О магазине»:
-[Frida Lannerström](https://unsplash.com/@fridalannerstrom) —
-[«a close up of a red fox's face»](https://unsplash.com/photos/a-close-up-of-a-red-foxs-face-DUXOafpG6To),
-лицензия [Unsplash License](https://unsplash.com/license) (коммерческое использование разрешено).
-Локальная копия: `public/images/fox-liisa.webp` (~57 КБ).
+На первом экране и в блоке «О магазине» — фирменная иллюстрация лисы с осенними листьями
+(`public/images/fox-liisa.webp`). Компактный логотип в шапке/футере — `logo-mark.webp` /
+`logo-mark-dark.webp`.
