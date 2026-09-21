@@ -1,0 +1,332 @@
+{
+  "added": [
+    {
+      "base": "semechko-doma-mini",
+      "title": "Семечко будущего дома (мини)",
+      "priceRub": 300,
+      "description": "Символическое семечко вашего будущего дома. \nВы приобретаете домик и начинаете делать добрые дела. Любые добрые дела на ваше усмотрение!\nКогда дел будет сделано достаточно , дом у вас появится. \nВы его купите, построите, унаследуете и т.д.\nЭто может быть дом, дача, квартира или коттедж. Все о чем вы мечтаете или что для вас сейчас символ дома. \nЧудеса там где в них верят.",
+      "images": [
+        "/images/products/semechko-doma-mini.webp",
+        "/images/products/semechko-doma-mini-2.webp",
+        "/images/products/semechko-doma-mini-3.webp",
+        "/images/products/semechko-doma-mini-4.webp"
+      ],
+      "category": "seeds",
+      "vkId": 13513529,
+      "upgrade": false
+    },
+    {
+      "base": "semechko-dela",
+      "title": "Семечко вашего будущего дела",
+      "priceRub": 700,
+      "description": "Символическое семечко вашего будущего собственного дела, бизнеса.\nВы приобретаете мельницу и начинаете делать добрые дела. \nЛюбые добрые дела на ваше усмотрение!\nКогда дел будет сделано достаточно , Ваше собственное дело начнет расти и приносить доходы. \nМельница, как символ успешной работы, очень сильный талисман!\nИ помните, дорогу осилит идущий.\n \nЧудеса там где в них верят.",
+      "images": [
+        "/images/products/semechko-dela.webp",
+        "/images/products/semechko-dela-2.webp",
+        "/images/products/semechko-dela-3.webp",
+        "/images/products/semechko-dela-4.webp",
+        "/images/products/semechko-dela-6.webp"
+      ],
+      "category": "seeds",
+      "vkId": 13513598,
+      "upgrade": false
+    },
+    {
+      "base": "keramicheskiy-kon",
+      "title": "Керамический конь",
+      "priceRub": 8000,
+      "description": "Керамическая фигурка коня. \nИздревле конь считался главным оберегом с жизни человека. \nОн был другом и защитником. \nСейчас же фигура коня дарится  тому, кто хочет добиться успеха.",
+      "images": [
+        "/images/products/keramicheskiy-kon.webp",
+        "/images/products/keramicheskiy-kon-2.webp",
+        "/images/products/keramicheskiy-kon-3.webp",
+        "/images/products/keramicheskiy-kon-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13513616,
+      "upgrade": false
+    },
+    {
+      "base": "svistulka-kot",
+      "title": "Свистулька-кот, глина",
+      "priceRub": 900,
+      "description": "Глиняная свистулька котик, ручная работа.",
+      "images": [
+        "/images/products/svistulka-kot.webp",
+        "/images/products/svistulka-kot-2.webp",
+        "/images/products/svistulka-kot-3.webp",
+        "/images/products/svistulka-kot-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13513881,
+      "upgrade": false
+    },
+    {
+      "base": "svetilnik-keramika",
+      "title": "Светильник, керамика",
+      "priceRub": 11800,
+      "description": "Светильник домик, ручная работа, керамика. Работает от сети 220 вольт, внутри светодиод.\n Очень уютный свет, уникальное дизайнерское решение.",
+      "images": [
+        "/images/products/svetilnik-keramika.webp",
+        "/images/products/svetilnik-keramika-2.webp",
+        "/images/products/svetilnik-keramika-3.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13513927,
+      "upgrade": false
+    },
+    {
+      "base": "suvenir-keramika",
+      "title": "Сувенир из керамики",
+      "priceRub": 1200,
+      "description": "Прекрасный подарок , керамика ручная работа",
+      "images": [
+        "/images/products/suvenir-keramika.webp",
+        "/images/products/suvenir-keramika-2.webp",
+        "/images/products/suvenir-keramika-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13513975,
+      "upgrade": false
+    },
+    {
+      "base": "figurka-moryaka",
+      "title": "Фигурка моряка",
+      "priceRub": 30000,
+      "description": "Шикарная работа , фигурка моряка, выполнена из керамики",
+      "images": [
+        "/images/products/figurka-moryaka.webp",
+        "/images/products/figurka-moryaka-2.webp",
+        "/images/products/figurka-moryaka-3.webp"
+      ],
+      "category": "dolls",
+      "vkId": 13513985,
+      "upgrade": false
+    },
+    {
+      "base": "domik-svetilnik",
+      "title": "Домик-светильник, керамика",
+      "priceRub": 11800,
+      "description": "Светильник домик, ручная работа, керамика. Работает от сети 220 вольт, внутри светодиод. Очень уютный свет, уникальное дизайнерское решение. \nОколо 30 см.",
+      "images": [
+        "/images/products/domik-svetilnik.webp",
+        "/images/products/domik-svetilnik-2.webp",
+        "/images/products/domik-svetilnik-3.webp",
+        "/images/products/domik-svetilnik-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13513995,
+      "upgrade": false
+    },
+    {
+      "base": "brelok-gnomik",
+      "title": "Брелок гномик Выборгский",
+      "priceRub": 1500,
+      "description": "Связанный вручную, маленький персональный помощник гномик Вилли. \nНосить с собой , просить о помощи в любой момент, он всегда поможет.",
+      "images": [
+        "/images/products/brelok-gnomik.webp",
+        "/images/products/brelok-gnomik-2.webp",
+        "/images/products/brelok-gnomik-3.webp",
+        "/images/products/brelok-gnomik-4.webp",
+        "/images/products/brelok-gnomik-5.webp"
+      ],
+      "category": "jewelry",
+      "vkId": 13514199,
+      "upgrade": false
+    },
+    {
+      "base": "gnomik-villi",
+      "title": "Гномик Выборгский Вилли",
+      "priceRub": 1500,
+      "description": "Связанный вручную, маленький персональный помощник гномик Вилли. \nНосить с собой , просить о помощи в любой момент, он всегда поможет.",
+      "images": [
+        "/images/products/gnomik-villi.webp",
+        "/images/products/gnomik-villi-2.webp",
+        "/images/products/gnomik-villi-3.webp",
+        "/images/products/gnomik-villi-4.webp",
+        "/images/products/gnomik-villi-5.webp"
+      ],
+      "category": "dolls",
+      "vkId": 13514203,
+      "upgrade": false
+    },
+    {
+      "base": "lyagushka-podskazushka",
+      "title": "Лягушка Подсказушка",
+      "priceRub": 1500,
+      "description": "Связанная вручную игрушка , брелок. \nЛягушка Подсказушка, помогает принимать решения. \nСпросите у вашего помощника Подсказушки, как поступить и первое что придет вам в голову это и есть верное решение.",
+      "images": [
+        "/images/products/lyagushka-podskazushka.webp",
+        "/images/products/lyagushka-podskazushka-2.webp",
+        "/images/products/lyagushka-podskazushka-3.webp"
+      ],
+      "category": "jewelry",
+      "vkId": 13514210,
+      "upgrade": false
+    },
+    {
+      "base": "broshki-vyazanye",
+      "title": "Брошки вязаные",
+      "priceRub": 1700,
+      "description": "Волшебные мухоморчики для привлечения материальных благ.",
+      "images": [
+        "/images/products/broshki-vyazanye-2.webp",
+        "/images/products/broshki-vyazanye-3.webp",
+        "/images/products/broshki-vyazanye-4.webp"
+      ],
+      "category": "jewelry",
+      "vkId": 13516996,
+      "upgrade": false
+    },
+    {
+      "base": "broshka-brelok",
+      "title": "Брошка-брелок",
+      "priceRub": 1500,
+      "description": "Шикарный мухомор 🍄, для тех кто хочет привлечь деньги.",
+      "images": [
+        "/images/products/broshka-brelok.webp",
+        "/images/products/broshka-brelok-2.webp",
+        "/images/products/broshka-brelok-3.webp",
+        "/images/products/broshka-brelok-4.webp"
+      ],
+      "category": "jewelry",
+      "vkId": 13516999,
+      "upgrade": false
+    },
+    {
+      "base": "muhomor-kolokolchik",
+      "title": "Мухомор-колокольчик, керамика",
+      "priceRub": 1300,
+      "description": "Волшебный мухомор колокольчик, звенит к богатству.",
+      "images": [
+        "/images/products/muhomor-kolokolchik.webp",
+        "/images/products/muhomor-kolokolchik-2.webp",
+        "/images/products/muhomor-kolokolchik-3.webp",
+        "/images/products/muhomor-kolokolchik-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13517001,
+      "upgrade": false
+    },
+    {
+      "base": "zhelud-keramika",
+      "title": "Желудь, керамика",
+      "priceRub": 1200,
+      "description": "Желудь издревле носили в кармане, для привлечения удачи.",
+      "images": [
+        "/images/products/zhelud-keramika.webp",
+        "/images/products/zhelud-keramika-2.webp",
+        "/images/products/zhelud-keramika-3.webp",
+        "/images/products/zhelud-keramika-4.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13517020,
+      "upgrade": false
+    },
+    {
+      "base": "muhomor-na-udachu",
+      "title": "Мухомор на удачу",
+      "priceRub": 1700,
+      "description": "Мухомор 🍄 ручная работа",
+      "images": [
+        "/images/products/muhomor-na-udachu.webp",
+        "/images/products/muhomor-na-udachu-2.webp",
+        "/images/products/muhomor-na-udachu-3.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13517047,
+      "upgrade": false
+    },
+    {
+      "base": "svetilnik-domik",
+      "title": "Светильник-домик, керамика",
+      "priceRub": 11000,
+      "description": "Керамический домик светильник , внутри светодиод, светит достаточно ярко и создает в комнате волшебную атмосферу уюта.",
+      "images": [
+        "/images/products/svetilnik-domik.webp",
+        "/images/products/svetilnik-domik-2.webp",
+        "/images/products/svetilnik-domik-3.webp"
+      ],
+      "category": "ceramics",
+      "vkId": 13517049,
+      "upgrade": false
+    },
+    {
+      "base": "lisy-pape-mashe",
+      "title": "Лисы из папье-маше",
+      "priceRub": 1100,
+      "description": "Очаровательные лисы из папье-маше , ручная работа",
+      "images": [
+        "/images/products/lisy-pape-mashe.webp",
+        "/images/products/lisy-pape-mashe-2.webp",
+        "/images/products/lisy-pape-mashe-3.webp",
+        "/images/products/lisy-pape-mashe-4.webp",
+        "/images/products/lisy-pape-mashe-6.webp"
+      ],
+      "category": "dolls",
+      "vkId": 13517052,
+      "upgrade": false
+    },
+    {
+      "base": "babka-yozhka-louhi",
+      "title": "Бабка Ёжка и Лоухи",
+      "priceRub": 3000,
+      "description": "Бабки Ёжки и Лоухи, куклы ручной работы, цена от 2300 до 4500. Зависит от размера куклы. Чудесная идея для подарка.",
+      "images": [
+        "/images/products/babka-yozhka-louhi.webp",
+        "/images/products/babka-yozhka-louhi-2.webp",
+        "/images/products/babka-yozhka-louhi-3.webp",
+        "/images/products/babka-yozhka-louhi-4.webp",
+        "/images/products/babka-yozhka-louhi-5.webp"
+      ],
+      "category": "dolls",
+      "vkId": 13517053,
+      "upgrade": false
+    },
+    {
+      "base": "stranniki",
+      "title": "Странники",
+      "priceRub": 10000,
+      "description": "Куклы странники, ошеломительно прекрасные работы , прекрасный подарок коллекционеру и просто человеку понимающему. Цены разные , ассортимент тоже меняется.",
+      "images": [
+        "/images/products/stranniki.webp",
+        "/images/products/stranniki-2.webp",
+        "/images/products/stranniki-3.webp"
+      ],
+      "category": "dolls",
+      "vkId": 13517056,
+      "upgrade": false
+    }
+  ],
+  "upgraded": [
+    {
+      "base": "mne-tolko-sprosit",
+      "title": "«Мне только спросить», ковка",
+      "priceRub": 25000,
+      "description": "Кованая авторская  работа, фигура «мне только спросить». \nЭмоции в металле, проработанные детали и легкий юмор. \nПрекрасная идея подарка.",
+      "images": [
+        "/images/products/mne-tolko-sprosit.webp",
+        "/images/products/mne-tolko-sprosit-2.webp",
+        "/images/products/mne-tolko-sprosit-3.webp",
+        "/images/products/mne-tolko-sprosit-4.webp"
+      ],
+      "category": "forge",
+      "vkId": 13517059,
+      "upgrade": true
+    },
+    {
+      "base": "sobaka-eva",
+      "title": "Собака Ева, ковка",
+      "priceRub": 2500,
+      "description": "Кованая собака Ева. Авторская работа кузнеца.",
+      "images": [
+        "/images/products/sobaka-eva.webp",
+        "/images/products/sobaka-eva-2.webp",
+        "/images/products/sobaka-eva-3.webp"
+      ],
+      "category": "forge",
+      "vkId": 13517060,
+      "upgrade": true
+    }
+  ]
+}
