@@ -666,6 +666,12 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* Rows without a thumb (categories): full-width body, actions on the right */
+.product-row--text {
+  grid-template-columns: 1fr;
 }
 
 .product-form {
@@ -707,6 +713,10 @@
     align-items: center;
   }
 
+  .product-row--text {
+    grid-template-columns: 1fr;
+  }
+
   .product-row__thumb {
     width: 72px;
     height: 72px;
@@ -717,6 +727,10 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+  }
+
+  .product-row--text .product-row__actions {
+    margin-left: auto;
   }
 
   .product-form__row {

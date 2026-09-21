@@ -1,5 +1,5 @@
 import type { CategoryMeta, ProductCategory } from './categories'
-import { DEFAULT_CATEGORIES, slugifyCategoryId } from './categories'
+import { DEFAULT_CATEGORIES, uniqueCategoryId } from './categories'
 import { DEMO_MODE } from './config'
 import { DEMO_PRODUCTS } from '../data/demoProducts'
 import { normalizeAdminOrder, summarizeProductNames } from './orderItems'
@@ -509,11 +509,14 @@ export function createAdminCategory(payload: CategoryInput): Promise<{ ok: true;
   if (DEMO_MODE) {
     requireDemoAuth()
     const categories = readDemoCategories()
-    const id = (payload.id?.trim() || slugifyCategoryId(payload.label)).toLowerCase()
+    const existingIds = categories.map((category) => category.id)
+    const id = payload.id?.trim()
+      ? payload.id.trim().toLowerCase()
+      : uniqueCategoryId(payload.label, existingIds)
     if (!/^[a-z][a-z0-9-]{1,47}$/.test(id)) {
       throw new ApiError('Id категории: латиница, цифры и дефис, от 2 символов')
     }
-    if (categories.some((category) => category.id === id)) {
+    if (existingIds.includes(id)) {
       throw new ApiError('Категория с таким id уже есть')
     }
     const label = payload.label.trim()

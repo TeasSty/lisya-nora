@@ -159,3 +159,16 @@ export function slugifyCategoryId(label: string): string {
   }
   return out.replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'category'
 }
+
+/** Уникальный slug из названия: при коллизии добавляет -2, -3, … */
+export function uniqueCategoryId(label: string, existingIds: Iterable<string>): string {
+  const taken = new Set(existingIds)
+  const base = slugifyCategoryId(label)
+  if (!taken.has(base)) return base
+  for (let n = 2; n < 1000; n++) {
+    const suffix = `-${n}`
+    const candidate = `${base.slice(0, Math.max(1, 48 - suffix.length))}${suffix}`
+    if (!taken.has(candidate)) return candidate
+  }
+  return `${base.slice(0, 40)}-${Date.now().toString(36)}`.slice(0, 48)
+}

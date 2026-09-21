@@ -217,6 +217,53 @@ function toPublicCategory(row: CategoryRow) {
   }
 }
 
+/** Транслит slug из русского названия (зеркало src/lib/categories.ts). */
+function slugifyCategoryId(label: string): string {
+  const map: Record<string, string> = {
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    е: 'e',
+    ё: 'e',
+    ж: 'zh',
+    з: 'z',
+    и: 'i',
+    й: 'y',
+    к: 'k',
+    л: 'l',
+    м: 'm',
+    н: 'n',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    у: 'u',
+    ф: 'f',
+    х: 'h',
+    ц: 'ts',
+    ч: 'ch',
+    ш: 'sh',
+    щ: 'sch',
+    ъ: '',
+    ы: 'y',
+    ь: '',
+    э: 'e',
+    ю: 'yu',
+    я: 'ya',
+  }
+  const lower = label.trim().toLowerCase()
+  let out = ''
+  for (const ch of lower) {
+    if (map[ch] !== undefined) out += map[ch]
+    else if (/[a-z0-9]/.test(ch)) out += ch
+    else if (ch === ' ' || ch === '-' || ch === '_') out += '-'
+  }
+  return out.replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'category'
+}
+
 async function categoryExists(db: D1Database, id: string): Promise<boolean> {
   const row = await db.prepare('SELECT id FROM categories WHERE id = ?').bind(id).first<{ id: string }>()
   if (row) return true
@@ -689,11 +736,11 @@ app.post('/api/admin/categories', async (c) => {
       typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? Math.round(body.sortOrder) : 0
     let id = typeof body.id === 'string' ? body.id.trim().toLowerCase() : ''
     if (!id && label) {
-      id = label
-        .toLowerCase()
-        .replace(/[^a-z0-9а-яё]+/gi, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 48)
+      id = slugifyCategoryId(label)
+      for (let n = 2; n < 1000 && (await categoryExists(c.env.DB, id)); n++) {
+        const suffix = `-${n}`
+        id = `${slugifyCategoryId(label).slice(0, Math.max(1, 48 - suffix.length))}${suffix}`
+      }
     }
 
     if (!label || label.length > 80) return c.json({ error: 'Укажите название категории' }, 400)

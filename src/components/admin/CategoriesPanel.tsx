@@ -7,7 +7,7 @@ import {
   updateAdminCategory,
   type CategoryInput,
 } from '../../lib/api'
-import { type CategoryMeta, slugifyCategoryId } from '../../lib/categories'
+import { type CategoryMeta, uniqueCategoryId } from '../../lib/categories'
 
 const EMPTY_FORM: CategoryInput = {
   id: '',
@@ -70,7 +70,11 @@ export function CategoriesPanel() {
     setIsSaving(true)
     try {
       if (editingId === 'new') {
-        await createAdminCategory(form)
+        const id = uniqueCategoryId(
+          form.label,
+          categories.map((category) => category.id),
+        )
+        await createAdminCategory({ ...form, id })
       } else if (editingId) {
         await updateAdminCategory(editingId, form)
       }
@@ -122,7 +126,6 @@ export function CategoriesPanel() {
                     ...prev,
                     label,
                     room: prev.room || label,
-                    id: editingId === 'new' ? slugifyCategoryId(label) : prev.id,
                   }))
                 }}
                 required
@@ -149,29 +152,14 @@ export function CategoriesPanel() {
               />
             </div>
 
-            <div className="product-form__row">
-              <div className="form-field" style={{ margin: 0 }}>
-                <label htmlFor="c-id">Id (латиница)</label>
-                <input
-                  id="c-id"
-                  value={form.id ?? ''}
-                  onChange={(e) => setForm({ ...form, id: e.target.value.toLowerCase() })}
-                  disabled={editingId !== 'new'}
-                  required={editingId === 'new'}
-                  pattern="[a-z][a-z0-9-]{1,47}"
-                  title="Латиница, цифры и дефис"
-                />
-              </div>
-
-              <div className="form-field" style={{ margin: 0 }}>
-                <label htmlFor="c-sort">Порядок</label>
-                <input
-                  id="c-sort"
-                  type="number"
-                  value={form.sortOrder}
-                  onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
-                />
-              </div>
+            <div className="form-field">
+              <label htmlFor="c-sort">Порядок</label>
+              <input
+                id="c-sort"
+                type="number"
+                value={form.sortOrder}
+                onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
+              />
             </div>
 
             {formError && (
@@ -215,12 +203,12 @@ export function CategoriesPanel() {
         {!isLoading && !error && categories.length > 0 && (
           <div>
             {categories.map((category) => (
-              <div className="product-row" key={category.id}>
+              <div className="product-row product-row--text" key={category.id}>
                 <div className="product-row__body">
                   <div className="product-row__info">
                     <strong>{category.label}</strong>
                     <span>
-                      {category.short || 'без подписи'} · id: {category.id} · порядок {category.sortOrder}
+                      {category.short || 'без подписи'} · порядок {category.sortOrder}
                     </span>
                   </div>
                   <div className="product-row__actions">
