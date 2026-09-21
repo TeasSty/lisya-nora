@@ -27,8 +27,8 @@ function HeroStage() {
           className="hero-den__photo"
           src={assetPath('images/fox-liisa.webp')}
           alt=""
-          width={1024}
-          height={1024}
+          width={900}
+          height={1350}
           decoding="async"
           fetchPriority="high"
         />

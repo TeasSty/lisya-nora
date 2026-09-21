@@ -120,8 +120,8 @@ export function About() {
               <img
                 src={assetPath('images/fox-liisa.webp')}
                 alt="Рыжая лиса — символ магазина «Лисья нора»"
-                width={1024}
-                height={1024}
+                width={900}
+                height={1350}
                 loading="lazy"
                 decoding="async"
               />
