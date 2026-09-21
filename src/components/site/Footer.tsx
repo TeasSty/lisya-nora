@@ -42,7 +42,7 @@ export function Footer() {
 
         <div className="site-footer__bottom">
           <span>
-            © {new Date().getFullYear()} «{MERCHANT.brandName}» · магазин уникальных подарков
+            © {new Date().getFullYear()} «{MERCHANT.brandName}» · {MERCHANT.tagline}
           </span>
           <Link to="/privacy">Политика персональных данных</Link>
         </div>
