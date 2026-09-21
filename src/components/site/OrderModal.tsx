@@ -4,7 +4,7 @@ import { extractCityFromFullAddress } from '../../lib/addressSuggest'
 import { ApiError, submitOrder } from '../../lib/api'
 import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
-import { isCompleteAddress, isCompletePickupPoint, OZON_PVZ_MAP_URL } from '../../lib/ozonShipment'
+import { isCompleteAddress, isCompletePickupPoint } from '../../lib/ozonShipment'
 import type { Product } from '../../lib/types'
 import { AddressSuggestInput } from './AddressSuggestInput'
 
@@ -431,20 +431,6 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                     {fieldErrors.pickupPoint}
                   </p>
                 )}
-                <div className="pvz-actions">
-                  <a
-                    className="btn btn-ghost btn-sm"
-                    href={OZON_PVZ_MAP_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Открыть карту Ozon
-                  </a>
-                </div>
-                <p className="field-hint">
-                  Город в пункте уже есть — отдельное поле не нужно. Найдите ПВЗ на карте и вставьте
-                  адрес.
-                </p>
               </div>
 
               <div className="form-field">
