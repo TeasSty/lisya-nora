@@ -435,15 +435,16 @@
   gap: 8px;
   padding: 12px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-line-soft);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(176, 92, 48, 0.28);
+  background: linear-gradient(180deg, rgba(255, 248, 240, 0.95), rgba(255, 255, 255, 0.7));
+  box-shadow: inset 3px 0 0 var(--color-fox);
 }
 
 .order-row__ozon-fields-title {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-fox-dark);
 }
 
 .ozon-copy-list {
@@ -532,6 +533,18 @@
 .order-row__copy-note {
   color: var(--color-forest-dark);
   font-weight: 700;
+}
+
+.order-row__toast {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #e8f0e4;
+  border: 1px solid #c5d6bc;
+  color: var(--color-forest-dark);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .order-row__actions {

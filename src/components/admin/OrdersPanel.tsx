@@ -56,7 +56,7 @@ export function OrdersPanel() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
-  const [copyNote, setCopyNote] = useState<string | null>(null)
+  const [orderNotes, setOrderNotes] = useState<Record<number, string>>({})
   const [trackingDrafts, setTrackingDrafts] = useState<Record<number, string>>({})
   const [idQuery, setIdQuery] = useState('')
 
@@ -79,12 +79,20 @@ export function OrdersPanel() {
     load()
   }, [])
 
+  function flashOrderNote(orderId: number, text: string) {
+    setOrderNotes((prev) => ({ ...prev, [orderId]: text }))
+  }
+
   async function toggleStatus(order: AdminOrder) {
     const nextStatus = order.status === 'new' ? 'done' : 'new'
     setBusyId(order.id)
     try {
       await updateOrderStatus(order.id, nextStatus)
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: nextStatus } : o)))
+      flashOrderNote(
+        order.id,
+        nextStatus === 'done' ? 'Отмечена выполненной' : 'Вернули в новые',
+      )
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось обновить заявку')
     } finally {
@@ -94,16 +102,15 @@ export function OrdersPanel() {
 
   async function handleCopyOzonField(order: AdminOrder, label: string, value: string) {
     const ok = await copyText(value)
-    setCopyNote(
-      ok
-        ? `«${label}» по заявке №${order.id} скопировано — вставьте в приложение Ozon`
-        : 'Не удалось скопировать',
+    flashOrderNote(
+      order.id,
+      ok ? `«${label}» скопировано — вставьте в Ozon` : 'Не удалось скопировать',
     )
   }
 
   async function handleCopyOzon(order: AdminOrder) {
     const ok = await copyText(buildOzonShipmentDocument(order))
-    setCopyNote(ok ? `Весь блок по заявке №${order.id} скопирован` : 'Не удалось скопировать')
+    flashOrderNote(order.id, ok ? 'Весь блок скопирован' : 'Не удалось скопировать')
   }
 
   async function handleCopyClientMessage(order: AdminOrder) {
@@ -112,7 +119,7 @@ export function OrdersPanel() {
       trackingNumber: trackingDrafts[order.id] ?? order.trackingNumber ?? '',
     }
     const ok = await copyText(buildTrackingMessage(withTrack))
-    setCopyNote(ok ? `Сообщение клиенту по заявке №${order.id} скопировано` : 'Не удалось скопировать')
+    flashOrderNote(order.id, ok ? 'Сообщение клиенту скопировано' : 'Не удалось скопировать')
   }
 
   async function handleSaveTracking(order: AdminOrder) {
@@ -123,10 +130,9 @@ export function OrdersPanel() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, trackingNumber: value } : o)),
       )
-      setCopyNote(
-        value
-          ? `Номер отправления Ozon по заявке №${order.id} сохранён`
-          : `Номер отправления Ozon по заявке №${order.id} очищен`,
+      flashOrderNote(
+        order.id,
+        value ? 'Номер отправления Ozon сохранён' : 'Номер отправления Ozon очищен',
       )
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось сохранить номер отправления')
@@ -177,12 +183,6 @@ export function OrdersPanel() {
                 · Найдено: <strong>{filteredOrders.length}</strong>
               </>
             )}
-            {copyNote && (
-              <>
-                {' '}
-                · <span className="order-row__copy-note">{copyNote}</span>
-              </>
-            )}
           </p>
         </>
       )}
@@ -219,6 +219,11 @@ export function OrdersPanel() {
             const ozonNumber = (trackingDrafts[order.id] ?? order.trackingNumber ?? '').trim()
             return (
               <article className="order-row" key={order.id}>
+                {orderNotes[order.id] && (
+                  <p className="order-row__toast" role="status">
+                    {orderNotes[order.id]}
+                  </p>
+                )}
                 <div className="order-row__top">
                   <div className="order-row__heading">
                     <div className="order-row__ids">
