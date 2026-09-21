@@ -47,14 +47,14 @@
 }
 
 .site-header__brand .fox-mark {
-  width: 92px;
-  height: 92px;
+  width: 108px;
+  height: 108px;
 }
 
 @media (max-width: 479px) {
   .site-header__brand .fox-mark {
-    width: 76px;
-    height: 76px;
+    width: 88px;
+    height: 88px;
   }
 
   .site-header__inner {
@@ -1863,8 +1863,8 @@
 }
 
 .site-footer__brand .fox-mark {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
 }
 
 .site-footer__content {
@@ -1981,8 +1981,8 @@
   }
 
   .site-footer__brand .fox-mark {
-    width: 88px;
-    height: 88px;
+    width: 100px;
+    height: 100px;
   }
 
   .site-footer__content {

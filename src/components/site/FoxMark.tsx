@@ -7,8 +7,8 @@ interface FoxMarkProps {
 }
 
 /**
- * Фирменная эмблема из Logo.pdf: только лиса в серпе луны (без дугового текста).
- * Растровая версия — PDF векторный, но без точной трассировки SVG надёжнее PNG/WebP.
+ * Фирменная эмблема: рыжая лиса в листовом круге.
+ * dark — для кремового фона сайта; light — для тёмного футера.
  */
 export function FoxMark({ className, variant = 'dark' }: FoxMarkProps) {
   const src =
