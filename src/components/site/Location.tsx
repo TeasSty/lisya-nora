@@ -74,7 +74,7 @@ export function Location() {
               <StoreMap />
             </Suspense>
             <p className="waymap__caption">
-              От Выборгского замка — пара минут пешком.{' '}
+              <span>От Выборгского замка — пара минут пешком.</span>
               <a
                 href={`https://yandex.ru/maps/?text=${mapQuery}`}
                 target="_blank"

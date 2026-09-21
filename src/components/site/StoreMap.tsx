@@ -25,7 +25,7 @@ function createPinIcon(): L.DivIcon {
 }
 
 /**
- * Лёгкая карта на Leaflet + бесплатных тайлах CARTO (без API-ключей).
+ * Лёгкая карта на Leaflet + тайлах OpenStreetMap (без API-ключа).
  * Тон плитки смещён CSS-фильтром в фирменный тёмно-зелёный.
  * Карта «спит» (не перехватывает скролл/жесты страницы), пока её не включат кликом —
  * это особенно важно на мобильных, где иначе палец случайно начинает водить по карте
@@ -54,11 +54,11 @@ export function StoreMap() {
       '<a href="https://leafletjs.com" target="_blank" rel="noreferrer">Leaflet</a>',
     )
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+      subdomains: 'abc',
+      maxZoom: 19,
     }).addTo(map)
 
     const marker = L.marker(STORE_COORDS, { icon: createPinIcon(), alt: 'Лисья нора, Краснофлотская 4А' })
