@@ -870,13 +870,21 @@
 .product-carousel {
   position: relative;
   overflow: hidden;
+  /* Горизонтальный жест — наш, вертикальный скролл страницы — браузеру. */
   touch-action: pan-y;
   user-select: none;
+  -webkit-user-select: none;
   background: var(--color-bg-soft);
+  cursor: grab;
+}
+
+.product-carousel:active {
+  cursor: grabbing;
 }
 
 .product-carousel__track {
   display: flex;
+  width: 100%;
   height: 100%;
   transition: transform 0.28s ease;
   will-change: transform;
@@ -884,7 +892,9 @@
 
 .product-carousel__slide {
   flex: 0 0 100%;
+  width: 100%;
   height: 100%;
+  min-width: 100%;
 }
 
 .product-carousel__slide img {
@@ -892,6 +902,7 @@
   height: 100%;
   object-fit: cover;
   pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .product-carousel__nav {
@@ -913,6 +924,8 @@
   display: grid;
   place-items: center;
   padding: 0;
+  /* Не даём жесту карусели перехватить нажатие на стрелку. */
+  touch-action: manipulation;
 }
 
 .product-carousel:hover .product-carousel__nav,
@@ -942,13 +955,14 @@
 
 .product-carousel__dot {
   pointer-events: auto;
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   padding: 0;
   border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-paper) 55%, transparent);
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
@@ -957,9 +971,10 @@
   transform: scale(1.15);
 }
 
-@media (max-width: 619px) {
+/* На тач-устройствах стрелки всегда видны — hover недоступен. */
+@media (hover: none), (max-width: 619px) {
   .product-carousel__nav {
-    opacity: 0.85;
+    opacity: 0.9;
     width: 28px;
     height: 28px;
     font-size: 18px;

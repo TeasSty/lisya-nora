@@ -1,10 +1,16 @@
-import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { productImageList, type Product } from '../../lib/types'
 import { ProductPattern } from './ProductPattern'
 
 interface ProductCarouselProps {
   product: Pick<Product, 'name' | 'category' | 'imageUrl' | 'imageUrls'>
   className?: string
+}
+
+const SWIPE_THRESHOLD_PX = 40
+
+function isControlTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest('button'))
 }
 
 /**
@@ -16,42 +22,67 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
   const [index, setIndex] = useState(0)
   const dragStartX = useRef<number | null>(null)
   const dragDelta = useRef(0)
+  const ignoreClick = useRef(false)
 
   const count = images.length
   const safeIndex = count === 0 ? 0 : ((index % count) + count) % count
 
-  const go = useCallback(
-    (next: number) => {
-      if (count <= 1) return
-      setIndex(((next % count) + count) % count)
-    },
-    [count],
-  )
+  const go = useCallback((delta: number) => {
+    if (count <= 1) return
+    setIndex((current) => ((current + delta) % count + count) % count)
+  }, [count])
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (count <= 1) return
+    // Не перехватываем жесты с кнопок — иначе click стрелок/точек глотается capture'ом.
+    if (isControlTarget(event.target)) return
     dragStartX.current = event.clientX
     dragDelta.current = 0
+    ignoreClick.current = false
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragStartX.current === null) return
     dragDelta.current = event.clientX - dragStartX.current
+    if (Math.abs(dragDelta.current) > 8) {
+      ignoreClick.current = true
+    }
   }
 
-  const onPointerUp = () => {
+  const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragStartX.current === null) return
     const delta = dragDelta.current
     dragStartX.current = null
     dragDelta.current = 0
-    if (Math.abs(delta) < 40) return
-    go(safeIndex + (delta < 0 ? 1 : -1))
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    } catch {
+      /* already released */
+    }
+    if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return
+    go(delta < 0 ? 1 : -1)
   }
+
+  const onControlPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+  }
+
+  const onControlClick = (event: ReactMouseEvent<HTMLButtonElement>, action: () => void) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (ignoreClick.current) {
+      ignoreClick.current = false
+      return
+    }
+    action()
+  }
+
+  const rootClass = className ? `product-carousel ${className}` : 'product-carousel'
 
   if (count === 0) {
     return (
-      <div className={className ? `product-carousel ${className}` : 'product-carousel'}>
+      <div className={rootClass}>
         <ProductPattern category={product.category} />
       </div>
     )
@@ -59,7 +90,7 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
 
   return (
     <div
-      className={className ? `product-carousel ${className}` : 'product-carousel'}
+      className={rootClass}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -91,10 +122,8 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
             type="button"
             className="product-carousel__nav product-carousel__nav--prev"
             aria-label="Предыдущее фото"
-            onClick={(e) => {
-              e.stopPropagation()
-              go(safeIndex - 1)
-            }}
+            onPointerDown={onControlPointerDown}
+            onClick={(e) => onControlClick(e, () => go(-1))}
           >
             ‹
           </button>
@@ -102,10 +131,8 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
             type="button"
             className="product-carousel__nav product-carousel__nav--next"
             aria-label="Следующее фото"
-            onClick={(e) => {
-              e.stopPropagation()
-              go(safeIndex + 1)
-            }}
+            onPointerDown={onControlPointerDown}
+            onClick={(e) => onControlClick(e, () => go(1))}
           >
             ›
           </button>
@@ -118,10 +145,8 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
                 aria-selected={i === safeIndex}
                 aria-label={`Фото ${i + 1} из ${count}`}
                 className={`product-carousel__dot${i === safeIndex ? ' is-active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIndex(i)
-                }}
+                onPointerDown={onControlPointerDown}
+                onClick={(e) => onControlClick(e, () => setIndex(i))}
               />
             ))}
           </div>

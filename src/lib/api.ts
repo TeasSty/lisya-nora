@@ -12,7 +12,6 @@ const DEMO_PRODUCTS_KEY = 'lisya-nora-demo-products'
 const DEMO_ORDERS_KEY = 'lisya-nora-demo-orders'
 const DEMO_CATEGORIES_KEY = 'lisya-nora-demo-categories'
 const DEMO_CATEGORY_MIGRATION_KEY = 'lisya-nora-demo-cat-v2'
-const DEMO_IMAGES_MIGRATION_KEY = 'lisya-nora-demo-images-v1'
 /** Пароль демо-панели только в бандле; не светим его в UI/README публичного репо. */
 export const DEMO_ADMIN_PASSWORD = 'nora-demo-panel'
 
@@ -107,17 +106,26 @@ function migrateDemoProductCategories(products: AdminProduct[]): AdminProduct[] 
   return next
 }
 
-/** Подтягиваем карусели и новые товары из сида, не затирая правки админа по остальным полям. */
+/**
+ * Идемпотентно подтягиваем карусели и новые товары из сида.
+ * Нельзя делать one-shot по флагу в localStorage: иначе старые записи без
+ * imageUrls (или с одним кадром) навсегда остаются без галереи после первого
+ * прогона миграции — и карусель на витрине «не листается».
+ */
 function migrateDemoProductImages(products: AdminProduct[]): AdminProduct[] {
-  if (localStorage.getItem(DEMO_IMAGES_MIGRATION_KEY) === '1') return products
-
   const byName = new Map(DEMO_PRODUCTS.map((product) => [product.name.toLowerCase(), product]))
   const knownIds = new Set(products.map((product) => product.id))
   let changed = false
 
   const next = products.map((product) => {
     const seeded = byName.get(product.name.toLowerCase())
-    if (!seeded) return product
+    if (!seeded) {
+      if (!product.imageUrls?.length && product.imageUrl) {
+        changed = true
+        return { ...product, imageUrls: [product.imageUrl] }
+      }
+      return product
+    }
     const seededUrls = seeded.imageUrls?.length
       ? seeded.imageUrls
       : seeded.imageUrl
@@ -167,7 +175,8 @@ function migrateDemoProductImages(products: AdminProduct[]): AdminProduct[] {
     changed = true
   }
 
-  localStorage.setItem(DEMO_IMAGES_MIGRATION_KEY, '1')
+  // Снимаем устаревший one-shot флаг, если он остался от прошлых билдов.
+  localStorage.removeItem('lisya-nora-demo-images-v1')
   if (changed) writeDemoProducts(next)
   return next
 }
