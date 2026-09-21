@@ -66,24 +66,55 @@ function isHttps(request: Request): boolean {
   return new URL(request.url).protocol === 'https:'
 }
 
+function parseImageUrls(raw: string | null | undefined, fallback: string | null): string[] {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (Array.isArray(parsed)) {
+        const urls = parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        if (urls.length > 0) return urls
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return fallback ? [fallback] : []
+}
+
+function normalizeImageUrls(value: unknown): string[] | { error: string } {
+  if (value === null || value === undefined) return []
+  if (!Array.isArray(value)) return { error: 'Некорректный список фото' }
+  const urls: string[] = []
+  for (const entry of value) {
+    const result = normalizeImageUrl(entry)
+    if (result && typeof result === 'object' && 'error' in result) return result
+    if (typeof result === 'string') urls.push(result)
+  }
+  return urls
+}
+
 function toPublicProduct(row: ProductRow) {
+  const imageUrls = parseImageUrls(row.image_urls, row.image_url)
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     category: row.category,
-    imageUrl: row.image_url,
+    imageUrl: imageUrls[0] ?? row.image_url,
+    imageUrls,
     priceRub: row.price_rub,
   }
 }
 
 function toAdminProduct(row: ProductRow) {
+  const imageUrls = parseImageUrls(row.image_urls, row.image_url)
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     category: row.category,
-    imageUrl: row.image_url,
+    imageUrl: imageUrls[0] ?? row.image_url,
+    imageUrls,
     priceRub: row.price_rub,
     isActive: row.is_active === 1,
     sortOrder: row.sort_order,
@@ -293,7 +324,7 @@ function normalizeImageUrl(value: unknown): string | null | { error: string } {
 app.get('/api/products', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, name, description, category, image_url, price_rub, is_active, sort_order, created_at FROM products WHERE is_active = 1 ORDER BY sort_order ASC, id ASC',
+      'SELECT id, name, description, category, image_url, image_urls, price_rub, is_active, sort_order, created_at FROM products WHERE is_active = 1 ORDER BY sort_order ASC, id ASC',
     ).all<ProductRow>()
     return c.json({ products: results.map(toPublicProduct) })
   } catch (error) {
@@ -597,7 +628,7 @@ app.patch('/api/admin/orders/:id', async (c) => {
 app.get('/api/admin/products', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, name, description, category, image_url, price_rub, is_active, sort_order, created_at FROM products ORDER BY sort_order ASC, id ASC',
+      'SELECT id, name, description, category, image_url, image_urls, price_rub, is_active, sort_order, created_at FROM products ORDER BY sort_order ASC, id ASC',
     ).all<ProductRow>()
     return c.json({ products: results.map(toAdminProduct) })
   } catch (error) {
@@ -613,6 +644,7 @@ app.post('/api/admin/products', async (c) => {
       description?: unknown
       category?: unknown
       imageUrl?: unknown
+      imageUrls?: unknown
       priceRub?: unknown
       isActive?: unknown
       sortOrder?: unknown
@@ -621,11 +653,19 @@ app.post('/api/admin/products', async (c) => {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
-    const imageResult = normalizeImageUrl(body.imageUrl)
-    if (imageResult && typeof imageResult === 'object' && 'error' in imageResult) {
-      return c.json({ error: imageResult.error }, 400)
+    const imageUrlsResult = normalizeImageUrls(
+      body.imageUrls !== undefined
+        ? body.imageUrls
+        : body.imageUrl !== undefined && body.imageUrl !== null && body.imageUrl !== ''
+          ? [body.imageUrl]
+          : [],
+    )
+    if (imageUrlsResult && typeof imageUrlsResult === 'object' && 'error' in imageUrlsResult) {
+      return c.json({ error: imageUrlsResult.error }, 400)
     }
-    const imageUrl = imageResult
+    const imageUrls = imageUrlsResult
+    const imageUrl = imageUrls[0] ?? null
+    const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
     const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
@@ -635,9 +675,9 @@ app.post('/api/admin/products', async (c) => {
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     const result = await c.env.DB.prepare(
-      'INSERT INTO products (name, description, category, image_url, price_rub, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      'INSERT INTO products (name, description, category, image_url, image_urls, price_rub, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id',
     )
-      .bind(name, description, category, imageUrl, priceRub, isActive ? 1 : 0, sortOrder)
+      .bind(name, description, category, imageUrl, imageUrlsJson, priceRub, isActive ? 1 : 0, sortOrder)
       .first<{ id: number }>()
 
     return c.json({ ok: true, id: result?.id })
@@ -657,6 +697,7 @@ app.put('/api/admin/products/:id', async (c) => {
       description?: unknown
       category?: unknown
       imageUrl?: unknown
+      imageUrls?: unknown
       priceRub?: unknown
       isActive?: unknown
       sortOrder?: unknown
@@ -665,11 +706,19 @@ app.put('/api/admin/products/:id', async (c) => {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const category = body.category
-    const imageResult = normalizeImageUrl(body.imageUrl)
-    if (imageResult && typeof imageResult === 'object' && 'error' in imageResult) {
-      return c.json({ error: imageResult.error }, 400)
+    const imageUrlsResult = normalizeImageUrls(
+      body.imageUrls !== undefined
+        ? body.imageUrls
+        : body.imageUrl !== undefined && body.imageUrl !== null && body.imageUrl !== ''
+          ? [body.imageUrl]
+          : [],
+    )
+    if (imageUrlsResult && typeof imageUrlsResult === 'object' && 'error' in imageUrlsResult) {
+      return c.json({ error: imageUrlsResult.error }, 400)
     }
-    const imageUrl = imageResult
+    const imageUrls = imageUrlsResult
+    const imageUrl = imageUrls[0] ?? null
+    const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
     const priceRub = parsePriceRub(body.priceRub)
     const isActive = body.isActive !== false
     const sortOrder = typeof body.sortOrder === 'number' && Number.isFinite(body.sortOrder) ? body.sortOrder : 0
@@ -679,9 +728,9 @@ app.put('/api/admin/products/:id', async (c) => {
     if (description.length > 1000) return c.json({ error: 'Описание слишком длинное' }, 400)
 
     const result = await c.env.DB.prepare(
-      'UPDATE products SET name = ?, description = ?, category = ?, image_url = ?, price_rub = ?, is_active = ?, sort_order = ? WHERE id = ?',
+      'UPDATE products SET name = ?, description = ?, category = ?, image_url = ?, image_urls = ?, price_rub = ?, is_active = ?, sort_order = ? WHERE id = ?',
     )
-      .bind(name, description, category, imageUrl, priceRub, isActive ? 1 : 0, sortOrder, id)
+      .bind(name, description, category, imageUrl, imageUrlsJson, priceRub, isActive ? 1 : 0, sortOrder, id)
       .run()
 
     if (!result.meta.changes) return c.json({ error: 'Товар не найден' }, 404)

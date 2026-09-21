@@ -12,6 +12,7 @@ const DEMO_PRODUCTS_KEY = 'lisya-nora-demo-products'
 const DEMO_ORDERS_KEY = 'lisya-nora-demo-orders'
 const DEMO_CATEGORIES_KEY = 'lisya-nora-demo-categories'
 const DEMO_CATEGORY_MIGRATION_KEY = 'lisya-nora-demo-cat-v2'
+const DEMO_IMAGES_MIGRATION_KEY = 'lisya-nora-demo-images-v1'
 /** Пароль демо-панели только в бандле; не светим его в UI/README публичного репо. */
 export const DEMO_ADMIN_PASSWORD = 'nora-demo-panel'
 
@@ -106,12 +107,77 @@ function migrateDemoProductCategories(products: AdminProduct[]): AdminProduct[] 
   return next
 }
 
+/** Подтягиваем карусели и новые товары из сида, не затирая правки админа по остальным полям. */
+function migrateDemoProductImages(products: AdminProduct[]): AdminProduct[] {
+  if (localStorage.getItem(DEMO_IMAGES_MIGRATION_KEY) === '1') return products
+
+  const byName = new Map(DEMO_PRODUCTS.map((product) => [product.name.toLowerCase(), product]))
+  const knownIds = new Set(products.map((product) => product.id))
+  let changed = false
+
+  const next = products.map((product) => {
+    const seeded = byName.get(product.name.toLowerCase())
+    if (!seeded) return product
+    const seededUrls = seeded.imageUrls?.length
+      ? seeded.imageUrls
+      : seeded.imageUrl
+        ? [seeded.imageUrl]
+        : []
+    const currentUrls = product.imageUrls?.length
+      ? product.imageUrls
+      : product.imageUrl
+        ? [product.imageUrl]
+        : []
+    if (seededUrls.length > currentUrls.length) {
+      changed = true
+      return {
+        ...product,
+        imageUrl: seededUrls[0] ?? product.imageUrl,
+        imageUrls: seededUrls,
+      }
+    }
+    if (!product.imageUrls?.length && currentUrls.length > 0) {
+      changed = true
+      return { ...product, imageUrls: currentUrls }
+    }
+    return product
+  })
+
+  for (const seeded of DEMO_PRODUCTS) {
+    const exists = next.some(
+      (product) =>
+        product.id === seeded.id || product.name.toLowerCase() === seeded.name.toLowerCase(),
+    )
+    if (exists) continue
+    let id = seeded.id
+    while (knownIds.has(id)) id += 1000
+    knownIds.add(id)
+    next.push({
+      ...seeded,
+      id,
+      imageUrls: seeded.imageUrls?.length
+        ? seeded.imageUrls
+        : seeded.imageUrl
+          ? [seeded.imageUrl]
+          : [],
+      isActive: true,
+      sortOrder: next.length,
+      createdAt: new Date().toISOString(),
+    })
+    changed = true
+  }
+
+  localStorage.setItem(DEMO_IMAGES_MIGRATION_KEY, '1')
+  if (changed) writeDemoProducts(next)
+  return next
+}
+
 function readDemoProducts(): AdminProduct[] {
   try {
     const raw = localStorage.getItem(DEMO_PRODUCTS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as AdminProduct[]
-      return migrateDemoProductCategories(parsed)
+      return migrateDemoProductImages(migrateDemoProductCategories(parsed))
     }
   } catch {
     /* ignore */
@@ -428,9 +494,22 @@ export interface ProductInput {
   description: string
   category: ProductCategory
   imageUrl: string
+  /** Все фото карусели; если пусто — используется imageUrl. */
+  imageUrls?: string[]
   priceRub: number | null
   isActive: boolean
   sortOrder: number
+}
+
+function normalizeProductImages(payload: ProductInput): { imageUrl: string | null; imageUrls: string[] } {
+  const fromList = Array.isArray(payload.imageUrls)
+    ? payload.imageUrls.filter((url) => typeof url === 'string' && url.trim().length > 0)
+    : []
+  if (fromList.length > 0) {
+    return { imageUrl: fromList[0], imageUrls: fromList }
+  }
+  const single = payload.imageUrl?.trim() ? payload.imageUrl.trim() : null
+  return { imageUrl: single, imageUrls: single ? [single] : [] }
 }
 
 export function createAdminProduct(payload: ProductInput): Promise<{ ok: true; id: number }> {
@@ -441,10 +520,17 @@ export function createAdminProduct(payload: ProductInput): Promise<{ ok: true; i
     }
     const products = readDemoProducts()
     const id = Date.now()
+    const images = normalizeProductImages(payload)
     products.push({
       id,
-      ...payload,
-      imageUrl: payload.imageUrl || null,
+      name: payload.name,
+      description: payload.description,
+      category: payload.category,
+      imageUrl: images.imageUrl,
+      imageUrls: images.imageUrls,
+      priceRub: payload.priceRub,
+      isActive: payload.isActive,
+      sortOrder: payload.sortOrder,
       createdAt: new Date().toISOString(),
     })
     writeDemoProducts(products)
@@ -462,12 +548,19 @@ export function updateAdminProduct(id: number, payload: ProductInput): Promise<{
     if (!readDemoCategories().some((category) => category.id === payload.category)) {
       throw new ApiError('Некорректная категория')
     }
+    const images = normalizeProductImages(payload)
     const products = readDemoProducts().map((product) =>
       product.id === id
         ? {
             ...product,
-            ...payload,
-            imageUrl: payload.imageUrl || null,
+            name: payload.name,
+            description: payload.description,
+            category: payload.category,
+            imageUrl: images.imageUrl,
+            imageUrls: images.imageUrls,
+            priceRub: payload.priceRub,
+            isActive: payload.isActive,
+            sortOrder: payload.sortOrder,
           }
         : product,
     )

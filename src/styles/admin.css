@@ -775,6 +775,13 @@
   gap: 12px;
 }
 
+.image-field__previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
 .image-field__preview {
   width: 120px;
   height: 120px;

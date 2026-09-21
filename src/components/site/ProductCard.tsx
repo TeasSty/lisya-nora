@@ -1,6 +1,6 @@
 import { type CategoryMeta, categoryLabel, DEFAULT_CATEGORIES } from '../../lib/categories'
 import type { Product } from '../../lib/types'
-import { ProductPattern } from './ProductPattern'
+import { ProductCarousel } from './ProductCarousel'
 
 interface ProductCardProps {
   product: Product
@@ -14,11 +14,7 @@ export function ProductCard({ product, onAddToCart, categories = DEFAULT_CATEGOR
   return (
     <article className="product-card">
       <div className="product-card__media">
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} loading="lazy" decoding="async" />
-        ) : (
-          <ProductPattern category={product.category} />
-        )}
+        <ProductCarousel product={product} />
       </div>
       <div className="product-card__body">
         <div className="product-card__top">

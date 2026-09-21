@@ -26,6 +26,8 @@ export interface ProductRow {
   description: string
   category: ProductCategory
   image_url: string | null
+  /** JSON-массив URL фото (карусель); может отсутствовать в старых БД до миграции. */
+  image_urls?: string | null
   price_rub: number | null
   is_active: number
   sort_order: number

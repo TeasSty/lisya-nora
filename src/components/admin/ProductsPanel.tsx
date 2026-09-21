@@ -10,13 +10,14 @@ import {
   type ProductInput,
 } from '../../lib/api'
 import { compressImageFile } from '../../lib/compressImage'
-import type { AdminProduct } from '../../lib/types'
+import { productImageList, type AdminProduct } from '../../lib/types'
 
 const EMPTY_FORM: ProductInput = {
   name: '',
   description: '',
   category: 'jewelry',
   imageUrl: '',
+  imageUrls: [],
   priceRub: null,
   isActive: true,
   sortOrder: 0,
@@ -25,6 +26,13 @@ const EMPTY_FORM: ProductInput = {
 function formatPrice(priceRub: number | null): string {
   if (priceRub == null) return 'Цена по запросу'
   return new Intl.NumberFormat('ru-RU').format(priceRub) + ' ₽'
+}
+
+function formFromImages(urls: string[]): Pick<ProductInput, 'imageUrl' | 'imageUrls'> {
+  return {
+    imageUrl: urls[0] ?? '',
+    imageUrls: urls,
+  }
 }
 
 export function ProductsPanel() {
@@ -40,6 +48,11 @@ export function ProductsPanel() {
   const [showUrlField, setShowUrlField] = useState(false)
   const [imageNote, setImageNote] = useState<string | null>(null)
   const fileInputId = useId()
+
+  const formImages = productImageList({
+    imageUrl: form.imageUrl || null,
+    imageUrls: form.imageUrls,
+  })
 
   function load() {
     setIsLoading(true)
@@ -76,19 +89,19 @@ export function ProductsPanel() {
   }
 
   function startEdit(product: AdminProduct) {
-    const imageUrl = product.imageUrl ?? ''
+    const urls = productImageList(product)
     setForm({
       name: product.name,
       description: product.description,
       category: product.category,
-      imageUrl,
+      ...formFromImages(urls),
       priceRub: product.priceRub,
       isActive: product.isActive,
       sortOrder: product.sortOrder,
     })
     setFormError(null)
     setImageNote(null)
-    setShowUrlField(Boolean(imageUrl && !imageUrl.startsWith('data:')))
+    setShowUrlField(Boolean(urls[0] && !urls[0].startsWith('data:')))
     setEditingId(product.id)
   }
 
@@ -100,16 +113,25 @@ export function ProductsPanel() {
   }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
+    const files = [...(event.target.files ?? [])]
     event.target.value = ''
-    if (!file) return
+    if (files.length === 0) return
 
     setFormError(null)
     setImageNote(null)
     setIsCompressing(true)
     try {
-      const { dataUrl, note } = await compressImageFile(file)
-      setForm((prev) => ({ ...prev, imageUrl: dataUrl }))
+      const added: string[] = []
+      let note: string | undefined
+      for (const file of files) {
+        const result = await compressImageFile(file)
+        added.push(result.dataUrl)
+        if (result.note) note = result.note
+      }
+      setForm((prev) => {
+        const current = productImageList({ imageUrl: prev.imageUrl || null, imageUrls: prev.imageUrls })
+        return { ...prev, ...formFromImages([...current, ...added]) }
+      })
       setShowUrlField(false)
       if (note) setImageNote(note)
     } catch (err) {
@@ -119,9 +141,18 @@ export function ProductsPanel() {
     }
   }
 
-  function clearImage() {
-    setForm((prev) => ({ ...prev, imageUrl: '' }))
+  function clearImages() {
+    setForm((prev) => ({ ...prev, ...formFromImages([]) }))
     setImageNote(null)
+  }
+
+  function removeImageAt(index: number) {
+    setForm((prev) => {
+      const next = productImageList({ imageUrl: prev.imageUrl || null, imageUrls: prev.imageUrls }).filter(
+        (_, i) => i !== index,
+      )
+      return { ...prev, ...formFromImages(next) }
+    })
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -135,7 +166,10 @@ export function ProductsPanel() {
 
     setIsSaving(true)
     try {
-      const payload = { ...form }
+      const payload: ProductInput = {
+        ...form,
+        ...formFromImages(formImages),
+      }
       if (editingId === 'new') {
         await createAdminProduct(payload)
       } else if (typeof editingId === 'number') {
@@ -153,11 +187,12 @@ export function ProductsPanel() {
 
   async function handleToggleActive(product: AdminProduct) {
     try {
+      const urls = productImageList(product)
       await updateAdminProduct(product.id, {
         name: product.name,
         description: product.description,
         category: product.category,
-        imageUrl: product.imageUrl ?? '',
+        ...formFromImages(urls),
         priceRub: product.priceRub,
         isActive: !product.isActive,
         sortOrder: product.sortOrder,
@@ -206,8 +241,8 @@ export function ProductsPanel() {
               />
             </div>
 
-            <div className="product-form__row">
-              <div className="form-field" style={{ margin: 0 }}>
+            <div className="product-form__grid">
+              <div className="form-field">
                 <label htmlFor="p-category">Категория</label>
                 <select
                   id="p-category"
@@ -222,8 +257,25 @@ export function ProductsPanel() {
                 </select>
               </div>
 
-              <div className="form-field" style={{ margin: 0 }}>
-                <label htmlFor="p-sort">Порядок на странице</label>
+              <div className="form-field">
+                <label htmlFor="p-price">Цена, ₽</label>
+                <input
+                  id="p-price"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.priceRub ?? ''}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      priceRub: e.target.value === '' ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="p-sort">Порядок</label>
                 <input
                   id="p-sort"
                   type="number"
@@ -233,18 +285,7 @@ export function ProductsPanel() {
               </div>
             </div>
 
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="p-price">Цена, ₽ (необязательно — оставьте пустым, если цена уточняется)</label>
-              <input
-                id="p-price"
-                type="number"
-                min="0"
-                value={form.priceRub ?? ''}
-                onChange={(e) => setForm({ ...form, priceRub: e.target.value === '' ? null : Number(e.target.value) })}
-              />
-            </div>
-
-            <label className="product-form__active">
+            <label className="admin-check">
               <input
                 type="checkbox"
                 checked={form.isActive}
@@ -263,28 +304,36 @@ export function ProductsPanel() {
             </div>
 
             <div className="image-field">
-              <span className="image-field__label">Фото товара</span>
+              <span className="image-field__label">Фото товара (карусель)</span>
 
-              {form.imageUrl ? (
-                <div className="image-field__preview-wrap">
-                  <img className="image-field__preview" src={form.imageUrl} alt="Превью фото товара" />
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={clearImage}>
-                    Убрать фото
+              {formImages.length > 0 ? (
+                <div className="image-field__previews">
+                  {formImages.map((src, index) => (
+                    <div className="image-field__preview-wrap" key={`${index}-${src.slice(0, 24)}`}>
+                      <img className="image-field__preview" src={src} alt={`Фото ${index + 1}`} />
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeImageAt(index)}>
+                        Убрать
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={clearImages}>
+                    Очистить все
                   </button>
                 </div>
               ) : (
-                <p className="image-field__hint">Пока без фото — можно загрузить с компьютера.</p>
+                <p className="image-field__hint">Пока без фото — можно загрузить несколько с компьютера.</p>
               )}
 
               <div className="image-field__actions">
                 <label className="btn btn-ghost btn-sm image-field__file-btn" htmlFor={fileInputId}>
-                  {isCompressing ? 'Сжимаем…' : form.imageUrl ? 'Заменить фото' : 'Выбрать фото'}
+                  {isCompressing ? 'Сжимаем…' : formImages.length ? 'Добавить фото' : 'Выбрать фото'}
                 </label>
                 <input
                   id={fileInputId}
                   className="visually-hidden"
                   type="file"
                   accept="image/*"
+                  multiple
                   disabled={isCompressing || isSaving}
                   onChange={handleFileChange}
                 />
@@ -297,7 +346,7 @@ export function ProductsPanel() {
                 className="image-field__link-toggle"
                 onClick={() => setShowUrlField((v) => !v)}
               >
-                {showUrlField ? 'Скрыть поле ссылки' : 'или вставить ссылку'}
+                {showUrlField ? 'Скрыть поле ссылки' : 'или вставить ссылку на первое фото'}
               </button>
 
               {showUrlField && (
@@ -308,7 +357,16 @@ export function ProductsPanel() {
                     type="url"
                     placeholder="https://…"
                     value={form.imageUrl.startsWith('data:') ? '' : form.imageUrl}
-                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setForm((prev) => {
+                        const rest = productImageList({
+                          imageUrl: prev.imageUrl || null,
+                          imageUrls: prev.imageUrls,
+                        }).slice(1)
+                        return { ...prev, ...formFromImages(value ? [value, ...rest] : rest) }
+                      })
+                    }}
                   />
                 </div>
               )}
@@ -354,45 +412,47 @@ export function ProductsPanel() {
 
         {!isLoading && !error && products.length > 0 && (
           <div>
-            {products.map((product) => (
-              <div className="product-row" key={product.id}>
-                {product.imageUrl ? (
-                  <div className="product-row__thumb">
-                    <img src={product.imageUrl} alt="" loading="lazy" />
-                  </div>
-                ) : (
-                  <div className="product-row__thumb product-row__thumb--empty" aria-hidden="true">
-                    без фото
-                  </div>
-                )}
-                <div className="product-row__body">
-                  <div className="product-row__info">
-                    <strong>
-                      {product.name}
-                      {!product.isActive && <span className="product-row__badge">скрыт</span>}
-                    </strong>
-                    <span>
-                      {categoryLabel(product.category, categories)} · {formatPrice(product.priceRub)}
-                    </span>
-                  </div>
-                  <div className="product-row__actions">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(product)}>
-                      Изменить
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => handleToggleActive(product)}
-                    >
-                      {product.isActive ? 'Скрыть' : 'Показать'}
-                    </button>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDelete(product)}>
-                      Удалить
-                    </button>
+            {products.map((product) => {
+              const urls = productImageList(product)
+              const thumb = urls[0]
+              return (
+                <div className="product-row" key={product.id}>
+                  {thumb ? (
+                    <div className="product-row__thumb">
+                      <img src={thumb} alt="" loading="lazy" />
+                    </div>
+                  ) : (
+                    <div className="product-row__thumb product-row__thumb--empty" aria-hidden="true">
+                      без фото
+                    </div>
+                  )}
+                  <div className="product-row__body">
+                    <div className="product-row__info">
+                      <strong>{product.name}</strong>
+                      <span>
+                        {categoryLabel(product.category, categories)} · {formatPrice(product.priceRub)}
+                        {urls.length > 1 ? ` · ${urls.length} фото` : ''}
+                      </span>
+                    </div>
+                    <div className="product-row__actions">
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(product)}>
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => handleToggleActive(product)}
+                      >
+                        {product.isActive ? 'Скрыть' : 'Показать'}
+                      </button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleDelete(product)}>
+                        Удалить
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

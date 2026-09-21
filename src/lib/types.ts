@@ -5,9 +5,20 @@ export interface Product {
   name: string
   description: string
   category: ProductCategory
+  /** Обложка / первое фото (обратная совместимость). */
   imageUrl: string | null
+  /** Все фото карусели; если пусто — берём imageUrl. */
+  imageUrls?: string[]
   /** Цена в рублях — только если она реально указана продавцом, иначе null. */
   priceRub: number | null
+}
+
+/** Список URL фото для карточки / админки. */
+export function productImageList(product: Pick<Product, 'imageUrl' | 'imageUrls'>): string[] {
+  if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+    return product.imageUrls.filter((url) => typeof url === 'string' && url.trim().length > 0)
+  }
+  return product.imageUrl ? [product.imageUrl] : []
 }
 
 export interface AdminProduct extends Product {
