@@ -129,27 +129,16 @@
 }
 
 .admin-tabs {
-  position: sticky;
-  top: 56px;
-  z-index: 30;
   display: flex;
   gap: 8px;
   margin-bottom: 18px;
   padding: 6px;
   background: rgba(254, 249, 239, 0.94);
-  backdrop-filter: blur(10px);
   border: 1px solid var(--color-line-soft);
   border-radius: 999px;
   width: fit-content;
   max-width: 100%;
   flex-wrap: wrap;
-  box-shadow: 0 8px 24px rgba(43, 32, 25, 0.06);
-}
-
-@media (min-width: 640px) {
-  .admin-tabs {
-    top: 72px;
-  }
 }
 
 .admin-tabs .chip {
