@@ -65,7 +65,6 @@ export interface OzonCopyField {
   /** Как на экране в приложении Ozon. */
   label: string
   value: string
-  hint?: string
 }
 
 /**
@@ -77,37 +76,38 @@ export function getOzonCopyFields(order: AdminOrder): OzonCopyField[] {
   const value = itemsDeclaredValue(order)
   const goods = items.map((item) => formatOrderItemLine(item)).join('; ')
   const pvz = pickupPointForPaste(order.pickupPoint)
+  const address = order.address?.trim() || ''
 
   const fields: OzonCopyField[] = [
     {
       id: 'name',
       label: 'Получатель',
       value: order.name.trim(),
-      hint: 'Экран контакта / «Куда»',
     },
     {
       id: 'phone',
       label: 'Телефон',
       value: order.phone.trim(),
-      hint: 'Туда же, рядом с именем',
+    },
+    {
+      id: 'address',
+      label: 'Адрес',
+      value: address,
     },
     {
       id: 'pvz',
       label: 'Пункт выдачи',
       value: pvz,
-      hint: 'Поиск адреса ПВЗ в приложении',
     },
     {
       id: 'value',
       label: 'Стоимость предметов',
       value: value != null ? String(value) : '',
-      hint: value != null ? 'Только цифры, без ₽' : 'Уточнить при упаковке',
     },
     {
       id: 'title',
       label: 'Название заказа',
       value: goods.slice(0, 120),
-      hint: 'Кратко — что в посылке',
     },
   ]
 
@@ -116,7 +116,6 @@ export function getOzonCopyFields(order: AdminOrder): OzonCopyField[] {
       id: 'comment',
       label: 'Комментарий',
       value: order.comment.trim(),
-      hint: 'Необязательно для Ozon',
     })
   }
 

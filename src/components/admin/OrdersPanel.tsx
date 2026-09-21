@@ -288,7 +288,6 @@ export function OrdersPanel() {
                       <li key={`${order.id}-${field.id}`} className="ozon-copy-row">
                         <div className="ozon-copy-row__text">
                           <span className="ozon-copy-row__label">{field.label}</span>
-                          {field.hint && <span className="ozon-copy-row__hint">{field.hint}</span>}
                           <span className="ozon-copy-row__value">{field.value}</span>
                         </div>
                         <button

@@ -471,11 +471,6 @@
   letter-spacing: 0.02em;
 }
 
-.ozon-copy-row__hint {
-  font-size: 12px;
-  color: var(--color-ink-soft);
-}
-
 .ozon-copy-row__value {
   font-size: 14px;
   line-height: 1.4;
