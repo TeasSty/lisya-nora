@@ -181,7 +181,7 @@
 }
 
 .site-mobile-nav.is-open {
-  max-height: 320px;
+  max-height: 340px;
   visibility: visible;
   pointer-events: auto;
   transition: max-height 0.28s ease, visibility 0s;
@@ -190,7 +190,7 @@
 
 .site-mobile-nav__list {
   list-style: none;
-  padding: 8px 24px 20px;
+  padding: 20px 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 4px;
