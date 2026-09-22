@@ -14,8 +14,8 @@ export function Location() {
       <div className="container">
         <div className="section__head reveal" ref={ref}>
           <span className="eyebrow">Как нас найти</span>
-          <h2>Центр Выборга, рядом со старым городом</h2>
-          <p>Заходите — без предварительной записи, просто по расписанию магазина.</p>
+          <h2>Старый город, рядом с Серым монахом</h2>
+          <p>Заходите без записи — просто по расписанию магазина.</p>
         </div>
 
         <div className="location__grid">
