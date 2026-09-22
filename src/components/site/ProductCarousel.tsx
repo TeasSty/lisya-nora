@@ -1,10 +1,23 @@
-import { useCallback, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { productImageList, type Product } from '../../lib/types'
 import { ProductPattern } from './ProductPattern'
 
 interface ProductCarouselProps {
   product: Pick<Product, 'name' | 'category' | 'imageUrl' | 'imageUrls'>
   className?: string
+  /** Стартовый кадр (например, при открытии деталки с того же фото, что на карточке). */
+  initialIndex?: number
+  /** Клик по фото (не свайп, не стрелка/точка) — открыть деталку. */
+  onActivate?: (index: number) => void
+  /** Сообщать наружу текущий индекс (для синхрона с деталкой). */
+  onIndexChange?: (index: number) => void
 }
 
 const SWIPE_THRESHOLD_PX = 40
@@ -17,9 +30,15 @@ function isControlTarget(target: EventTarget | null): boolean {
  * Свайпаемая галерея фото товара (как в VK Market).
  * Один кадр — просто картинка; несколько — точки + свайп/кнопки.
  */
-export function ProductCarousel({ product, className }: ProductCarouselProps) {
+export function ProductCarousel({
+  product,
+  className,
+  initialIndex = 0,
+  onActivate,
+  onIndexChange,
+}: ProductCarouselProps) {
   const images = productImageList(product)
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(initialIndex)
   const dragStartX = useRef<number | null>(null)
   const dragDelta = useRef(0)
   const ignoreClick = useRef(false)
@@ -27,15 +46,34 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
   const count = images.length
   const safeIndex = count === 0 ? 0 : ((index % count) + count) % count
 
-  const go = useCallback((delta: number) => {
-    if (count <= 1) return
-    setIndex((current) => ((current + delta) % count + count) % count)
-  }, [count])
+  useEffect(() => {
+    if (count === 0) return
+    setIndex(((initialIndex % count) + count) % count)
+  }, [initialIndex, count])
+
+  useEffect(() => {
+    onIndexChange?.(safeIndex)
+  }, [safeIndex, onIndexChange])
+
+  const go = useCallback(
+    (delta: number) => {
+      if (count <= 1) return
+      setIndex((current) => ((current + delta) % count + count) % count)
+    },
+    [count],
+  )
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (count <= 1) return
+    if (count <= 1 && !onActivate) return
     // Не перехватываем жесты с кнопок — иначе click стрелок/точек глотается capture'ом.
     if (isControlTarget(event.target)) return
+    if (count <= 1) {
+      // Один кадр: только для различения клика vs случайного drag.
+      dragStartX.current = event.clientX
+      dragDelta.current = 0
+      ignoreClick.current = false
+      return
+    }
     dragStartX.current = event.clientX
     dragDelta.current = 0
     ignoreClick.current = false
@@ -60,6 +98,7 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
     } catch {
       /* already released */
     }
+    if (count <= 1) return
     if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return
     go(delta < 0 ? 1 : -1)
   }
@@ -78,11 +117,37 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
     action()
   }
 
+  const onRootClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!onActivate) return
+    if (isControlTarget(event.target)) return
+    if (ignoreClick.current) {
+      ignoreClick.current = false
+      return
+    }
+    onActivate(safeIndex)
+  }
+
   const rootClass = className ? `product-carousel ${className}` : 'product-carousel'
 
   if (count === 0) {
     return (
-      <div className={rootClass}>
+      <div
+        className={rootClass}
+        onClick={onActivate ? () => onActivate(0) : undefined}
+        role={onActivate ? 'button' : undefined}
+        tabIndex={onActivate ? 0 : undefined}
+        onKeyDown={
+          onActivate
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onActivate(0)
+                }
+              }
+            : undefined
+        }
+        aria-label={onActivate ? `Открыть: ${product.name}` : undefined}
+      >
         <ProductPattern category={product.category} />
       </div>
     )
@@ -95,6 +160,7 @@ export function ProductCarousel({ product, className }: ProductCarouselProps) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onClick={onRootClick}
       role="group"
       aria-roledescription="карусель"
       aria-label={`Фото: ${product.name}`}
