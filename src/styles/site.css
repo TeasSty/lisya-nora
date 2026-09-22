@@ -1493,6 +1493,16 @@
   color: var(--color-ink-soft);
 }
 
+.field-hint a {
+  color: var(--color-fox-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.field-hint a:hover {
+  color: var(--color-fox);
+}
+
 .pvz-actions {
   display: flex;
   flex-wrap: wrap;

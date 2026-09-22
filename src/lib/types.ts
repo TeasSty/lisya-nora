@@ -48,6 +48,13 @@ export interface AdminOrder {
   pickupPoint?: string
   /** Трек-номер после оформления отправки. */
   trackingNumber?: string
+  /**
+   * Предпочтительный канал связи: vk | telegram | whatsapp | call | sms.
+   * У старых заявок может отсутствовать.
+   */
+  contactChannel?: string
+  /** Ник / ссылка для канала (VK, Telegram, WhatsApp). */
+  contactHandle?: string
   /** Первый товар / legacy — для совместимости со старыми заявками. */
   productId: number | null
   /** Сводка названий или единственный товар (legacy). */

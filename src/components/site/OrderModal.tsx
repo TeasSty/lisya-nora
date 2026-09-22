@@ -2,6 +2,15 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { extractCityFromFullAddress } from '../../lib/addressSuggest'
 import { ApiError, submitOrder } from '../../lib/api'
+import {
+  CONTACT_CHANNEL_IDS,
+  CONTACT_CHANNEL_LABELS,
+  contactChannelNeedsHandle,
+  contactHandlePlaceholder,
+  formatContactChannel,
+  isContactChannelId,
+  type ContactChannelId,
+} from '../../lib/contactChannel'
 import { MERCHANT } from '../../lib/merchant'
 import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import { isCompleteAddress, isCompletePickupPoint } from '../../lib/ozonShipment'
@@ -23,8 +32,9 @@ const NAME_ERROR = 'Подскажите, как к вам обращаться'
 const PHONE_ERROR = 'Проверьте номер телефона'
 const ADDRESS_ERROR = 'Укажите город, улицу и номер дома'
 const PICKUP_ERROR = 'Укажите полный адрес пункта выдачи Ozon'
+const CHANNEL_ERROR = 'Выберите, как удобнее связаться'
 
-type FieldKey = 'name' | 'phone' | 'address' | 'pickupPoint' | 'consent'
+type FieldKey = 'name' | 'phone' | 'address' | 'pickupPoint' | 'contactChannel' | 'consent'
 
 type FieldErrors = Partial<Record<FieldKey, string>>
 
@@ -42,6 +52,7 @@ function validateOrderFields(input: {
   phone: string
   address: string
   pickupPoint: string
+  contactChannel: string
   consent: boolean
 }): FieldErrors {
   const next: FieldErrors = {}
@@ -49,6 +60,7 @@ function validateOrderFields(input: {
   if (!isValidPhone(input.phone)) next.phone = PHONE_ERROR
   if (!isCompleteAddress(input.address)) next.address = ADDRESS_ERROR
   if (!isCompletePickupPoint(input.pickupPoint)) next.pickupPoint = PICKUP_ERROR
+  if (!isContactChannelId(input.contactChannel)) next.contactChannel = CHANNEL_ERROR
   if (!input.consent) next.consent = CONSENT_ERROR
   return next
 }
@@ -60,6 +72,8 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   /** Город из подсказки — уходит в заявку, в форме отдельного поля нет. */
   const [cityFromSuggest, setCityFromSuggest] = useState<string | null>(null)
   const [pickupPoint, setPickupPoint] = useState('')
+  const [contactChannel, setContactChannel] = useState<ContactChannelId | ''>('')
+  const [contactHandle, setContactHandle] = useState('')
   const [comment, setComment] = useState('')
   const [consent, setConsent] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -74,6 +88,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
 
   const resolvedCity =
     cityFromSuggest?.trim() || extractCityFromFullAddress(address) || 'не указан'
+  const showContactHandle = contactChannelNeedsHandle(contactChannel)
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
@@ -141,7 +156,14 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
     event.preventDefault()
     setFormError(null)
 
-    const nextErrors = validateOrderFields({ name, phone, address, pickupPoint, consent })
+    const nextErrors = validateOrderFields({
+      name,
+      phone,
+      address,
+      pickupPoint,
+      contactChannel,
+      consent,
+    })
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors)
       return
@@ -160,7 +182,14 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
   async function confirmAndSend() {
     setFormError(null)
 
-    const nextErrors = validateOrderFields({ name, phone, address, pickupPoint, consent })
+    const nextErrors = validateOrderFields({
+      name,
+      phone,
+      address,
+      pickupPoint,
+      contactChannel,
+      consent,
+    })
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors)
       setStatus('idle')
@@ -181,6 +210,8 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
         city: resolvedCity,
         address: address.trim(),
         pickupPoint: pickupPoint.trim(),
+        contactChannel,
+        contactHandle: showContactHandle ? contactHandle.trim() : '',
         comment: comment.trim(),
         items: productsToOrderItems(products),
       })
@@ -281,6 +312,15 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
               <div>
                 <dt>ПВЗ Ozon</dt>
                 <dd>{pickupPoint.trim()}</dd>
+              </div>
+              <div>
+                <dt>Канал связи</dt>
+                <dd>
+                  {formatContactChannel(
+                    contactChannel,
+                    showContactHandle ? contactHandle : undefined,
+                  )}
+                </dd>
               </div>
               {comment.trim() && (
                 <div>
@@ -432,6 +472,59 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
                   </p>
                 )}
               </div>
+
+              <div className="form-field">
+                <label htmlFor="order-channel">Предпочтительный канал связи</label>
+                <select
+                  id="order-channel"
+                  value={contactChannel}
+                  aria-invalid={Boolean(fieldErrors.contactChannel)}
+                  aria-describedby={
+                    fieldErrors.contactChannel
+                      ? 'order-channel-error'
+                      : 'order-channel-hint'
+                  }
+                  onChange={(e) => {
+                    const next = e.target.value
+                    const channel = isContactChannelId(next) ? next : ''
+                    setContactChannel(channel)
+                    if (!contactChannelNeedsHandle(channel)) setContactHandle('')
+                    clearErrorIfValid('contactChannel', isContactChannelId(channel))
+                  }}
+                >
+                  <option value="">Выберите…</option>
+                  {CONTACT_CHANNEL_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {CONTACT_CHANNEL_LABELS[id]}
+                    </option>
+                  ))}
+                </select>
+                <p className="field-hint" id="order-channel-hint">
+                  Как удобнее ответить на заявку.{' '}
+                  <a href={MERCHANT.vkUrl} target="_blank" rel="noreferrer">
+                    Написать в VK
+                  </a>
+                </p>
+                {fieldErrors.contactChannel && (
+                  <p className="form-error form-error--field" id="order-channel-error" role="alert">
+                    {fieldErrors.contactChannel}
+                  </p>
+                )}
+              </div>
+
+              {showContactHandle && (
+                <div className="form-field">
+                  <label htmlFor="order-channel-handle">Ник или ссылка (необязательно)</label>
+                  <input
+                    id="order-channel-handle"
+                    type="text"
+                    autoComplete="username"
+                    placeholder={contactHandlePlaceholder(contactChannel)}
+                    value={contactHandle}
+                    onChange={(e) => setContactHandle(e.target.value)}
+                  />
+                </div>
+              )}
 
               <div className="form-field">
                 <label htmlFor="order-comment">Комментарий (необязательно)</label>

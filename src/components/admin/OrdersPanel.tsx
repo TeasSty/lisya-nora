@@ -5,6 +5,7 @@ import {
   updateOrderStatus,
   updateOrderTracking,
 } from '../../lib/api'
+import { formatContactChannel } from '../../lib/contactChannel'
 import { normalizeAdminOrder, formatOrderItemLine } from '../../lib/orderItems'
 import { buildOzonShipmentDocument, buildTrackingMessage, getOzonCopyFields } from '../../lib/ozonShipment'
 import type { AdminOrder } from '../../lib/types'
@@ -269,6 +270,14 @@ export function OrdersPanel() {
                     <div>
                       <dt>ПВЗ Ozon</dt>
                       <dd>{order.pickupPoint?.trim() || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Канал связи</dt>
+                      <dd>
+                        {order.contactChannel?.trim()
+                          ? formatContactChannel(order.contactChannel, order.contactHandle)
+                          : '—'}
+                      </dd>
                     </div>
                   </dl>
                 </div>

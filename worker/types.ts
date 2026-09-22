@@ -49,6 +49,8 @@ export interface OrderRow {
   address: string | null
   pickup_point: string | null
   tracking_number: string | null
+  contact_channel: string | null
+  contact_handle: string | null
   product_id: number | null
   product_name: string
   items_json: string | null

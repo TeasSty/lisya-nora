@@ -1,4 +1,5 @@
 import { parseAddressQuery } from './addressSuggest'
+import { formatContactChannel } from './contactChannel'
 import { formatOrderItemLine, normalizeAdminOrder } from './orderItems'
 import type { AdminOrder } from './types'
 
@@ -144,6 +145,11 @@ export function buildOzonShipmentDocument(order: AdminOrder): string {
 
   if (order.comment?.trim()) {
     lines.push('', `Комментарий клиента: ${order.comment.trim()}`)
+  }
+
+  const channel = order.contactChannel?.trim()
+  if (channel) {
+    lines.push('', `Канал связи: ${formatContactChannel(channel, order.contactHandle)}`)
   }
 
   lines.push('', `Заявка сайта №${order.id} · ${order.createdAt}`)

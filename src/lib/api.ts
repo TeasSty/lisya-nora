@@ -262,6 +262,10 @@ export interface OrderPayload {
   city: string
   address: string
   pickupPoint: string
+  /** Предпочтительный канал: vk | telegram | whatsapp | call | sms */
+  contactChannel: string
+  /** Ник / ссылка для канала (необязательно). */
+  contactHandle?: string
   comment: string
   /** Новые заявки: список позиций из корзины. */
   items: OrderItem[]
@@ -276,6 +280,8 @@ function normalizeOrderPayload(payload: OrderPayload): {
   city: string
   address: string
   pickupPoint: string
+  contactChannel: string
+  contactHandle: string
   comment: string
   items: OrderItem[]
   productId: number | null
@@ -310,6 +316,8 @@ function normalizeOrderPayload(payload: OrderPayload): {
     city: payload.city?.trim() ?? '',
     address: payload.address?.trim() ?? '',
     pickupPoint: payload.pickupPoint?.trim() ?? '',
+    contactChannel: payload.contactChannel?.trim() ?? '',
+    contactHandle: payload.contactHandle?.trim() ?? '',
     comment: payload.comment,
     items: validItems,
     productId,
@@ -402,6 +410,8 @@ export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
       address: normalized.address,
       pickupPoint: normalized.pickupPoint,
       trackingNumber: '',
+      contactChannel: normalized.contactChannel,
+      contactHandle: normalized.contactHandle,
       productId: normalized.productId,
       productName: normalized.productName,
       items: normalized.items,
