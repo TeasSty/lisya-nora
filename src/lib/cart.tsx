@@ -96,6 +96,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
       },
       setQuantity(productId, quantity) {
+        if (!Number.isFinite(quantity) || quantity < 1) {
+          setItems((prev) => prev.filter((item) => item.product.id !== productId))
+          return
+        }
         const next = clampQuantity(quantity)
         setItems((prev) =>
           prev.map((item) => (item.product.id === productId ? { ...item, quantity: next } : item)),

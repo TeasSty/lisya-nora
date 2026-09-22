@@ -114,7 +114,6 @@ export function CartDrawer() {
                         type="button"
                         className="cart-drawer__qty-btn"
                         aria-label={`Меньше «${product.name}»`}
-                        disabled={quantity <= 1}
                         onClick={() => setQuantity(product.id, quantity - 1)}
                       >
                         −

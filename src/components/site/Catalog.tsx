@@ -10,7 +10,6 @@ interface CatalogProps {
   loadError: string | null
   selected: RoomId
   onSelect: (room: RoomId) => void
-  onAddToCart: (product: Product) => void
   categories?: CategoryMeta[]
 }
 
@@ -20,7 +19,6 @@ export function Catalog({
   loadError,
   selected,
   onSelect,
-  onAddToCart,
   categories = DEFAULT_CATEGORIES,
 }: CatalogProps) {
   const [query, setQuery] = useState('')
@@ -93,12 +91,7 @@ export function Catalog({
       {!isLoading && !loadError && filtered.length > 0 && (
         <div className="catalog__grid">
           {filtered.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={onAddToCart}
-              categories={categories}
-            />
+            <ProductCard key={product.id} product={product} categories={categories} />
           ))}
         </div>
       )}

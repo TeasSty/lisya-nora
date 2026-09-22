@@ -22,7 +22,7 @@ function PublicSiteInner() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomId>('all')
-  const { addProduct, checkoutOpen, checkoutItems, closeCheckout, completeCheckout } = useCart()
+  const { checkoutOpen, checkoutItems, closeCheckout, completeCheckout } = useCart()
   const noraRef = useReveal<HTMLDivElement>()
 
   useEffect(() => {
@@ -89,7 +89,6 @@ function PublicSiteInner() {
                 loadError={loadError}
                 selected={selectedRoom}
                 onSelect={setSelectedRoom}
-                onAddToCart={addProduct}
                 categories={categories}
               />
             </div>

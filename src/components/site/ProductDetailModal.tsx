@@ -1,13 +1,13 @@
 import { useEffect, useId, useRef } from 'react'
 import { type CategoryMeta, categoryLabel, DEFAULT_CATEGORIES } from '../../lib/categories'
 import type { Product } from '../../lib/types'
+import { AddToCartControl } from './AddToCartControl'
 import { ProductCarousel } from './ProductCarousel'
 
 interface ProductDetailModalProps {
   product: Product
   initialImageIndex?: number
   onClose: () => void
-  onAddToCart: (product: Product) => void
   categories?: CategoryMeta[]
 }
 
@@ -17,7 +17,6 @@ export function ProductDetailModal({
   product,
   initialImageIndex = 0,
   onClose,
-  onAddToCart,
   categories = DEFAULT_CATEGORIES,
 }: ProductDetailModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -104,15 +103,7 @@ export function ProductDetailModal({
           </div>
           <h3 id={titleId}>{product.name}</h3>
           {product.description.trim() && <p className="product-detail__desc">{product.description}</p>}
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              onAddToCart(product)
-            }}
-          >
-            В корзину
-          </button>
+          <AddToCartControl product={product} />
         </div>
       </div>
     </div>
