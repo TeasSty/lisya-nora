@@ -10,6 +10,73 @@ export const PRODUCT_CATEGORIES = [
   'highlights',
 ] as const
 
+/** Зеркало src/lib/categories.ts — аварийный ответ, если таблица categories пуста. */
+export const DEFAULT_CATEGORIES_PUBLIC = [
+  {
+    id: 'seeds',
+    label: 'Домики-семена',
+    room: 'Домики-семена',
+    short: 'символы будущего дома',
+    sortOrder: 10,
+  },
+  {
+    id: 'ceramics',
+    label: 'Керамика',
+    room: 'Керамика',
+    short: 'вазы, фигурки, панно',
+    sortOrder: 20,
+  },
+  {
+    id: 'forge',
+    label: 'Работы кузнеца',
+    room: 'Работы кузнеца',
+    short: 'звери и фигуры из металла',
+    sortOrder: 30,
+  },
+  {
+    id: 'dolls',
+    label: 'Куклы коллекционные',
+    room: 'Куклы коллекционные',
+    short: 'лисы, пони, куклы',
+    sortOrder: 40,
+  },
+  {
+    id: 'jewelry',
+    label: 'Украшения',
+    room: 'Украшения',
+    short: 'броши, венки, осколки фарфора',
+    sortOrder: 50,
+  },
+  {
+    id: 'perfume',
+    label: 'Духи',
+    room: 'Духи',
+    short: 'ароматы из Карелии',
+    sortOrder: 60,
+  },
+  {
+    id: 'wood',
+    label: 'Дерево',
+    room: 'Дерево',
+    short: 'кедр и деревянные обереги',
+    sortOrder: 70,
+  },
+  {
+    id: 'candles',
+    label: 'Свечи',
+    room: 'Свечи',
+    short: 'тёплый свет для дома',
+    sortOrder: 80,
+  },
+  {
+    id: 'highlights',
+    label: 'Самое интересное',
+    room: 'Самое интересное',
+    short: 'избранные находки норы',
+    sortOrder: 90,
+  },
+] as const
+
 export type ProductCategory = string
 
 export interface CategoryRow {

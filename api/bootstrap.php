@@ -158,25 +158,41 @@ function ln_client_ip(): string
 
 /**
  * Простой file-based rate limit (shared hosting) с flock.
+ * Login: fail-closed (без лимита не пускаем brute-force).
+ * Остальное: fail-open + error_log, чтобы не ронять витрину/заказы.
  * @return array{ok:true}|array{ok:false,retryAfterSec:int}
  */
 function ln_rate_limit(string $key, int $max, int $windowSec = 600): array
 {
+    $failClosed = str_starts_with($key, 'login:');
     $dir = __DIR__ . '/cache/ratelimit';
     if (!is_dir($dir)) {
-        @mkdir($dir, 0755, true);
+        if (!@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            error_log('ln: rate limit cache dir unavailable: ' . $dir);
+            if ($failClosed) {
+                return ['ok' => false, 'retryAfterSec' => 60];
+            }
+            return ['ok' => true];
+        }
     }
     $file = $dir . '/' . hash('sha256', $key) . '.json';
     $now = time();
 
     $fh = @fopen($file, 'c+');
     if ($fh === false) {
-        // Нет кэша — не блокируем запросы (fail-open), иначе сломаем сайт.
+        error_log('ln: rate limit file open failed: ' . $file);
+        if ($failClosed) {
+            return ['ok' => false, 'retryAfterSec' => 60];
+        }
         return ['ok' => true];
     }
 
     try {
         if (!flock($fh, LOCK_EX)) {
+            error_log('ln: rate limit flock failed: ' . $file);
+            if ($failClosed) {
+                return ['ok' => false, 'retryAfterSec' => 60];
+            }
             return ['ok' => true];
         }
 

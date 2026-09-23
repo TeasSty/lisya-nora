@@ -5,7 +5,7 @@ import {
   searchOzonPvz,
 } from './ozonDelivery.js'
 import {
-  PRODUCT_CATEGORIES,
+  DEFAULT_CATEGORIES_PUBLIC,
   type CategoryRow,
   type OrderItemPayload,
   type OrderRow,
@@ -425,8 +425,7 @@ function slugifyCategoryId(label: string): string {
 
 async function categoryExists(db: D1Database, id: string): Promise<boolean> {
   const row = await db.prepare('SELECT id FROM categories WHERE id = ?').bind(id).first<{ id: string }>()
-  if (row) return true
-  return (PRODUCT_CATEGORIES as readonly string[]).includes(id)
+  return Boolean(row)
 }
 
 async function isValidCategory(db: D1Database, value: unknown): Promise<boolean> {
@@ -469,15 +468,8 @@ app.get('/api/categories', async (c) => {
     if (results.length > 0) {
       return c.json({ categories: results.map(toPublicCategory) })
     }
-    return c.json({
-      categories: PRODUCT_CATEGORIES.map((id, index) => ({
-        id,
-        label: id,
-        room: id,
-        short: '',
-        sortOrder: (index + 1) * 10,
-      })),
-    })
+    console.warn('categories table empty — using built-in defaults; run schema seed')
+    return c.json({ categories: [...DEFAULT_CATEGORIES_PUBLIC] })
   } catch (error) {
     console.error('GET /api/categories failed', error)
     return c.json({ error: 'Не удалось загрузить категории' }, 500)

@@ -3,10 +3,39 @@ declare(strict_types=1);
 
 const LN_MAX_IMAGE_URL_CHARS = 700_000;
 const LN_MAX_IMAGE_URLS = 12;
-const LN_PRODUCT_CATEGORIES = [
-    'seeds', 'ceramics', 'forge', 'dolls', 'jewelry', 'perfume', 'wood', 'candles', 'highlights',
+/**
+ * Полные подписи «комнат» — зеркало src/lib/categories.ts DEFAULT_CATEGORIES / mysql seed.
+ * Используется только как аварийный ответ GET /api/categories, если таблица пуста.
+ */
+const LN_DEFAULT_CATEGORIES = [
+    ['seeds', 'Домики-семена', 'Домики-семена', 'символы будущего дома', 10],
+    ['ceramics', 'Керамика', 'Керамика', 'вазы, фигурки, панно', 20],
+    ['forge', 'Работы кузнеца', 'Работы кузнеца', 'звери и фигуры из металла', 30],
+    ['dolls', 'Куклы коллекционные', 'Куклы коллекционные', 'лисы, пони, куклы', 40],
+    ['jewelry', 'Украшения', 'Украшения', 'броши, венки, осколки фарфора', 50],
+    ['perfume', 'Духи', 'Духи', 'ароматы из Карелии', 60],
+    ['wood', 'Дерево', 'Дерево', 'кедр и деревянные обереги', 70],
+    ['candles', 'Свечи', 'Свечи', 'тёплый свет для дома', 80],
+    ['highlights', 'Самое интересное', 'Самое интересное', 'избранные находки норы', 90],
 ];
+
 const LN_CONTACT_CHANNELS = ['vk', 'telegram', 'whatsapp', 'call', 'sms'];
+
+/** @return list<array{id:string,label:string,room:string,short:string,sortOrder:int}> */
+function ln_default_categories_public(): array
+{
+    $out = [];
+    foreach (LN_DEFAULT_CATEGORIES as $row) {
+        $out[] = [
+            'id' => $row[0],
+            'label' => $row[1],
+            'room' => $row[2],
+            'short' => $row[3],
+            'sortOrder' => (int) $row[4],
+        ];
+    }
+    return $out;
+}
 
 function ln_parse_image_urls(?string $raw, ?string $fallback): array
 {
@@ -351,10 +380,7 @@ function ln_category_exists(PDO $db, string $id): bool
 {
     $stmt = $db->prepare('SELECT id FROM categories WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
-    if ($stmt->fetch()) {
-        return true;
-    }
-    return in_array($id, LN_PRODUCT_CATEGORIES, true);
+    return (bool) $stmt->fetch();
 }
 
 function ln_is_valid_category(PDO $db, mixed $value): bool

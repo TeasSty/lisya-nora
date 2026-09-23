@@ -32,7 +32,9 @@ function PublicSiteInner() {
       .then(([productData, categoryData]) => {
         if (cancelled) return
         setProducts(productData.products)
-        setCategories(categoryData.categories)
+        setCategories(
+          categoryData.categories.length > 0 ? categoryData.categories : DEFAULT_CATEGORIES,
+        )
       })
       .catch((err) => {
         if (!cancelled) {

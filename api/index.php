@@ -44,17 +44,9 @@ try {
         if ($rows !== []) {
             ln_json(['categories' => array_map('ln_to_public_category', $rows)]);
         }
-        $fallback = [];
-        foreach (LN_PRODUCT_CATEGORIES as $i => $id) {
-            $fallback[] = [
-                'id' => $id,
-                'label' => $id,
-                'room' => $id,
-                'short' => '',
-                'sortOrder' => ($i + 1) * 10,
-            ];
-        }
-        ln_json(['categories' => $fallback]);
+        // Таблица пуста (не прогнали schema seed) — отдаём нормальные подписи, не id как label.
+        error_log('ln: categories table empty — using built-in defaults; import mysql/schema.sql');
+        ln_json(['categories' => ln_default_categories_public()]);
     }
 
     if ($method === 'GET' && $path === '/api/ozon/pvz/status') {
