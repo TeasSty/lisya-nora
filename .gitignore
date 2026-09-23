@@ -29,6 +29,12 @@ worker-configuration.d.ts
 .env.*
 !.env.example
 
+# Host-0 PHP config + runtime cache
+api/config.php
+api/cache/*.json
+api/cache/*.warming
+api/cache/ratelimit/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

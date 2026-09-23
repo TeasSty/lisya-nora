@@ -1,0 +1,29 @@
+# Папка api/ — только через index.php; конфиг и кэш закрыты.
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /api/
+
+  # Закрыть прямой доступ к config и кэшу
+  RewriteRule ^config\.php$ - [F,L]
+  RewriteRule ^config\.example\.php$ - [F,L]
+  RewriteRule ^cache/ - [F,L]
+  RewriteRule ^lib/ - [F,L]
+  RewriteRule ^bootstrap\.php$ - [F,L]
+
+  # Уже на index.php — не зацикливать
+  RewriteRule ^index\.php$ - [L]
+
+  # Всё остальное → index.php
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+Options -Indexes
+
+<FilesMatch "^(config\.php|bootstrap\.php)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>

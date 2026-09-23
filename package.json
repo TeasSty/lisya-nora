@@ -13,6 +13,7 @@
     "db:migrate:local": "wrangler d1 migrations apply lisya-nora-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply lisya-nora-db --remote",
     "build:regru": "tsc -b && vite build --config vite.config.reg.ts",
+    "build:host0": "npm run build:regru && node scripts/pack-host0.mjs",
     "start": "tsx server/index.ts",
     "start:regru": "tsx server/index.ts",
     "db:migrate:node": "tsx server/migrate.ts",

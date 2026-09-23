@@ -1,0 +1,27 @@
+# Host-0 / Apache: SPA + PHP API
+# Кладётся в корень public_html вместе с index.html и папкой api/
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Не ломать реальные файлы и папки (статика Vite, images, api/*.php через rewrite ниже)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /api/* → api/index.php (PHP backend)
+  RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
+
+  # SPA fallback
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+Options -Indexes
+
+# Защита скрытых/служебных
+<FilesMatch "^\.">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
