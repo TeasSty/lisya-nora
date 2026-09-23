@@ -8,6 +8,8 @@ type SavedScroll = {
 declare global {
   interface Window {
     __lisyaRestoreScroll?: () => void
+    __lisyaEarlyScrollY?: number
+    __lisyaEarlyPin?: () => void
   }
 }
 
@@ -39,27 +41,20 @@ function writeSaved(y: number) {
 function isReload(): boolean {
   const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
   if (nav) return nav.type === 'reload'
-  // Legacy fallback
   return (performance as Performance & { navigation?: { type: number } }).navigation?.type === 1
 }
 
-/** Instant jump — never inherit html { scroll-behavior: smooth }. */
+/** Instant jump — never uses CSS scroll-behavior. */
 function scrollInstant(y: number) {
   const root = document.documentElement
-  const prev = root.style.scrollBehavior
-  root.style.scrollBehavior = 'auto'
-  try {
-    window.scrollTo({ top: y, left: 0, behavior: 'instant' as ScrollBehavior })
-  } catch {
-    window.scrollTo(0, y)
-  }
-  root.style.scrollBehavior = prev
+  root.scrollTop = y
+  document.body.scrollTop = y
+  window.scrollTo(0, y)
 }
 
 /**
  * Keep the viewport where the user left it on F5.
- * Nav hash links (#o-magazine etc.) still work on first open / in-page clicks,
- * but a full reload must not jump back to the hash target.
+ * Smooth scrolling is only used by intentional nav clicks (Header), never on reload.
  */
 export function initScrollRestore() {
   if (typeof window === 'undefined') return
@@ -80,17 +75,33 @@ export function initScrollRestore() {
 
   if (isReload()) {
     const saved = readSaved()
-    if (!saved || saved.path !== pathKey()) return
+    const earlyY = window.__lisyaEarlyScrollY
+    const targetY =
+      saved && saved.path === pathKey()
+        ? saved.y
+        : typeof earlyY === 'number'
+          ? earlyY
+          : null
+    if (targetY === null) {
+      document.documentElement.classList.remove('scroll-restore-pending')
+      return
+    }
 
-    const targetY = saved.y
+    // Kill hash so the browser never smooth-scrolls to #nora after React mounts.
+    if (location.hash) {
+      history.replaceState(null, '', pathKey())
+    }
+
     let armed = true
 
     const apply = () => {
       if (!armed) return
       scrollInstant(targetY)
+      document.documentElement.classList.remove('scroll-restore-pending')
     }
 
     window.__lisyaRestoreScroll = apply
+    window.__lisyaEarlyPin?.()
     apply()
     queueMicrotask(apply)
     requestAnimationFrame(() => {
@@ -99,7 +110,6 @@ export function initScrollRestore() {
     })
     window.addEventListener('load', apply, { once: true })
 
-    // Catalog / fonts / images grow the page after first paint — re-pin briefly.
     const started = performance.now()
     const ro = new ResizeObserver(() => {
       apply()
@@ -135,19 +145,14 @@ export function initScrollRestore() {
     return
   }
 
-  // Fresh visit with a hash: scroll after React paints the target section.
+  // Fresh visit with a hash: scroll after React paints the target section (instant — no fly).
   if (location.hash) {
     const id = decodeURIComponent(location.hash.slice(1))
     if (!id) return
     const go = () => {
       const el = document.getElementById(id)
       if (!el) return
-      const root = document.documentElement
-      const prev = root.style.scrollBehavior
-      // Hash landing on first visit can stay smooth; reload path never reaches here.
-      root.style.scrollBehavior = ''
-      el.scrollIntoView()
-      root.style.scrollBehavior = prev
+      el.scrollIntoView({ behavior: 'auto', block: 'start' })
     }
     requestAnimationFrame(() => {
       go()

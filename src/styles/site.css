@@ -1111,12 +1111,22 @@
   min-width: 100%;
 }
 
-.product-carousel__slide img {
+.product-carousel__slide img,
+.product-carousel__placeholder {
   width: 100%;
   height: 100%;
   object-fit: cover;
   pointer-events: none;
   -webkit-user-drag: none;
+}
+
+.product-carousel__placeholder {
+  background: var(--color-bg-soft);
+}
+
+.product-carousel__slide .product-pattern {
+  width: 100%;
+  height: 100%;
 }
 
 .product-carousel__nav {
@@ -1442,6 +1452,11 @@
 .product-detail-overlay {
   /* Above sticky header (250); keep below PVZ picker (400) */
   z-index: 320;
+  /* Keep panel clear of sticky header on all viewports */
+  align-items: flex-start;
+  padding-top: max(12px, calc(var(--header-offset, 82px) + 8px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
 }
 
 .product-detail {
@@ -1451,7 +1466,11 @@
   display: flex;
   flex-direction: column;
   /* Leave room under sticky header on short viewports */
-  max-height: min(92dvh, calc(100dvh - 12px));
+  max-height: min(
+    92dvh,
+    calc(100dvh - var(--header-offset, 82px) - 24px - env(safe-area-inset-bottom, 0px))
+  );
+  margin-inline: auto;
 }
 
 .product-detail .modal-panel__close {
@@ -1591,7 +1610,8 @@
   }
 
   .product-detail-overlay {
-    padding-top: max(12px, 2vh);
+    align-items: center;
+    padding-top: max(16px, calc(var(--header-offset, 82px) + 12px));
   }
 }
 

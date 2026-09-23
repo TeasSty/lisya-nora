@@ -46,8 +46,8 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <!-- Before first paint: disable browser scroll restore + pin Y on F5 (instant, not smooth). -->
-    <script src="./early-scroll.js"></script>
+    <!-- Before first paint: pin scroll Y on F5. ?v= busts Host-0 nginx long cache. -->
+    <script src="./early-scroll.js?v=3"></script>
   </head>
   <body>
     <div id="root"></div>

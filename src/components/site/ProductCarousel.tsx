@@ -18,12 +18,28 @@ interface ProductCarouselProps {
   onActivate?: (index: number) => void
   /** Сообщать наружу текущий индекс (для синхрона с деталкой). */
   onIndexChange?: (index: number) => void
+  /**
+   * true — первый кадр eager (модалка).
+   * false/omit — все lazy (каталог: иначе 47 cover'ов грузятся сразу и тормозят).
+   */
+  priority?: boolean
 }
 
 const SWIPE_THRESHOLD_PX = 40
 
 function isControlTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('button'))
+}
+
+function shouldMountSrc(index: number, active: number, count: number): boolean {
+  if (count <= 1) return true
+  // Current ±1 — enough for swipe without loading the whole gallery.
+  const dist = Math.min(
+    Math.abs(index - active),
+    Math.abs(index - active + count) % count,
+    Math.abs(index - active - count) % count,
+  )
+  return dist <= 1
 }
 
 /**
@@ -36,24 +52,42 @@ export function ProductCarousel({
   initialIndex = 0,
   onActivate,
   onIndexChange,
+  priority = false,
 }: ProductCarouselProps) {
   const images = productImageList(product)
+  const imageKey = images.join('\0')
   const [index, setIndex] = useState(initialIndex)
+  const [failed, setFailed] = useState<Record<number, true>>({})
   const dragStartX = useRef<number | null>(null)
   const dragDelta = useRef(0)
   const ignoreClick = useRef(false)
 
   const count = images.length
   const safeIndex = count === 0 ? 0 : ((index % count) + count) % count
+  const allFailed = count > 0 && Object.keys(failed).length >= count
+
+  useEffect(() => {
+    setFailed({})
+  }, [imageKey])
 
   useEffect(() => {
     if (count === 0) return
     setIndex(((initialIndex % count) + count) % count)
-  }, [initialIndex, count])
+  }, [initialIndex, count, imageKey])
 
   useEffect(() => {
     onIndexChange?.(safeIndex)
   }, [safeIndex, onIndexChange])
+
+  // Prefetch next slide when index changes (warm cache without mounting all imgs).
+  useEffect(() => {
+    if (count <= 1) return
+    const nextSrc = images[(safeIndex + 1) % count]
+    if (!nextSrc || failed[(safeIndex + 1) % count]) return
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = nextSrc
+  }, [safeIndex, count, imageKey, failed])
 
   const go = useCallback(
     (delta: number) => {
@@ -65,10 +99,8 @@ export function ProductCarousel({
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (count <= 1 && !onActivate) return
-    // Не перехватываем жесты с кнопок — иначе click стрелок/точек глотается capture'ом.
     if (isControlTarget(event.target)) return
     if (count <= 1) {
-      // Один кадр: только для различения клика vs случайного drag.
       dragStartX.current = event.clientX
       dragDelta.current = 0
       ignoreClick.current = false
@@ -129,7 +161,7 @@ export function ProductCarousel({
 
   const rootClass = className ? `product-carousel ${className}` : 'product-carousel'
 
-  if (count === 0) {
+  if (count === 0 || allFailed) {
     return (
       <div
         className={rootClass}
@@ -169,17 +201,31 @@ export function ProductCarousel({
         className="product-carousel__track"
         style={{ transform: `translateX(-${safeIndex * 100}%)` }}
       >
-        {images.map((src, i) => (
-          <div className="product-carousel__slide" key={`${src}-${i}`}>
-            <img
-              src={src}
-              alt={count > 1 ? `${product.name} — фото ${i + 1}` : product.name}
-              loading={i === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-            />
-          </div>
-        ))}
+        {images.map((src, i) => {
+          const mount = shouldMountSrc(i, safeIndex, count) && !failed[i]
+          const isActive = i === safeIndex
+          return (
+            <div className="product-carousel__slide" key={`${src}-${i}`}>
+              {mount ? (
+                <img
+                  src={src}
+                  alt={count > 1 ? `${product.name} — фото ${i + 1}` : product.name}
+                  loading={priority && isActive ? 'eager' : 'lazy'}
+                  decoding="async"
+                  fetchPriority={priority && isActive ? 'high' : 'auto'}
+                  width={800}
+                  height={600}
+                  draggable={false}
+                  onError={() => setFailed((prev) => ({ ...prev, [i]: true }))}
+                />
+              ) : failed[i] ? (
+                <ProductPattern category={product.category} />
+              ) : (
+                <div className="product-carousel__placeholder" aria-hidden="true" />
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {count > 1 && (

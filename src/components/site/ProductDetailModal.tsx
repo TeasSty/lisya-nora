@@ -92,6 +92,7 @@ export function ProductDetailModal({
             product={product}
             className="product-carousel--detail"
             initialIndex={initialImageIndex}
+            priority
           />
         </div>
 

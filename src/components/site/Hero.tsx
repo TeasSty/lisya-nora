@@ -69,10 +69,26 @@ export function Hero() {
             хорошим настроением! Выборг, Краснофлотская 4а.
           </p>
           <div className="hero__actions">
-            <a href="#nora" className="btn btn-primary">
+            <a
+              href="#nora"
+              className="btn btn-primary"
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('nora')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                window.history.pushState(null, '', '#nora')
+              }}
+            >
               Исследовать нору
             </a>
-            <a href="#gde-my" className="btn btn-ghost">
+            <a
+              href="#gde-my"
+              className="btn btn-ghost"
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('gde-my')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                window.history.pushState(null, '', '#gde-my')
+              }}
+            >
               Как нас найти
             </a>
           </div>

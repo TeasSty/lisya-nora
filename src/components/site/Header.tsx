@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useCart } from '../../lib/cart'
 import { FoxMark } from './FoxMark'
 import { VkLoginBlock } from './VkLoginBlock'
@@ -9,6 +9,14 @@ const NAV_LINKS = [
   { href: '#otzyvy', label: 'Отзывы' },
   { href: '#gde-my', label: 'Где мы' },
 ]
+
+function scrollToHash(hash: string, behavior: ScrollBehavior = 'smooth') {
+  const id = decodeURIComponent(hash.replace(/^#/, ''))
+  if (!id) return
+  const el = document.getElementById(id)
+  if (!el) return
+  el.scrollIntoView({ behavior, block: 'start' })
+}
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -48,6 +56,14 @@ export function Header() {
     }
   }, [isOpen])
 
+  const onNavClick = (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault()
+    const { pathname, search } = window.location
+    window.history.pushState(null, '', `${pathname}${search}${href}`)
+    scrollToHash(href, 'smooth')
+    setIsOpen(false)
+  }
+
   return (
     <header className="site-header">
       <div className="container site-header__inner">
@@ -70,7 +86,9 @@ export function Header() {
         <ul className="site-header__nav">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
-              <a href={link.href}>{link.label}</a>
+              <a href={link.href} onClick={(e) => onNavClick(e, link.href)}>
+                {link.label}
+              </a>
             </li>
           ))}
         </ul>
@@ -119,7 +137,7 @@ export function Header() {
         <ul className="site-mobile-nav__list">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
-              <a href={link.href} onClick={() => setIsOpen(false)}>
+              <a href={link.href} onClick={(e) => onNavClick(e, link.href)}>
                 {link.label}
               </a>
             </li>
