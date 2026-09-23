@@ -1,11 +1,11 @@
-# Папка api/ — только через index.php; конфиг и кэш закрыты.
+# Папка api/ — только через index.php; конфиг, lib и кэш закрыты.
 DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /api/
 
-  # Закрыть прямой доступ к config и кэшу
+  # Закрыть прямой доступ к конфигу, кэшу и библиотекам
   RewriteRule ^config\.php$ - [F,L]
   RewriteRule ^config\.example\.php$ - [F,L]
   RewriteRule ^cache/ - [F,L]
@@ -22,8 +22,21 @@ DirectoryIndex index.php
 
 Options -Indexes
 
-<FilesMatch "^(config\.php|bootstrap\.php)$">
+# Запрет всех PHP кроме index.php (defense in depth, если rewrite обошли)
+<FilesMatch "\.php$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
 </FilesMatch>
+
+<Files "index.php">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Allow from all
+  </IfModule>
+</Files>

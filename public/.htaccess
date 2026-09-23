@@ -5,13 +5,14 @@
   RewriteEngine On
   RewriteBase /
 
-  # Не ломать реальные файлы и папки (статика Vite, images, api/*.php через rewrite ниже)
+  # ВАЖНО: /api/* всегда через front controller — иначе существующие
+  # файлы (config.php, lib/*.php) отдаются напрямую из-за правила -f ниже.
+  RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
+
+  # Не ломать реальные файлы и папки (статика Vite, images)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
-
-  # /api/* → api/index.php (PHP backend)
-  RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
 
   # SPA fallback
   RewriteRule ^ index.html [L]

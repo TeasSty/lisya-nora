@@ -66,6 +66,7 @@ export async function isSessionValid(
   cookieHeader: string | undefined | null,
   secret: string,
 ): Promise<boolean> {
+  if (!secret || secret.trim().length < 16) return false
   const value = readCookie(cookieHeader, SESSION_COOKIE_NAME)
   if (!value) return false
   const separatorIndex = value.indexOf('.')

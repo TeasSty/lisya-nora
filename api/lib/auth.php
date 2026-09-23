@@ -6,6 +6,9 @@ const LN_SESSION_TTL = 60 * 60 * 8;
 
 function ln_timing_safe_equal(string $a, string $b): bool
 {
+    if (function_exists('hash_equals')) {
+        return hash_equals($a, $b);
+    }
     $len = max(strlen($a), strlen($b));
     $diff = strlen($a) === strlen($b) ? 0 : 1;
     for ($i = 0; $i < $len; $i++) {
@@ -28,6 +31,24 @@ function ln_read_cookie(string $name): ?string
     }
     $v = $_COOKIE[$name];
     return is_string($v) && $v !== '' ? $v : null;
+}
+
+function ln_session_secret(): string
+{
+    return trim((string) (ln_config()['session_secret'] ?? ''));
+}
+
+function ln_admin_password(): string
+{
+    return (string) (ln_config()['admin_password'] ?? '');
+}
+
+/** Секрет слишком короткий — подпись cookie бессмысленна. */
+function ln_secrets_configured(): bool
+{
+    $secret = ln_session_secret();
+    $password = ln_admin_password();
+    return $secret !== '' && strlen($secret) >= 16 && $password !== '';
 }
 
 function ln_create_session_cookie(string $secret, bool $secure): string
@@ -59,6 +80,9 @@ function ln_clear_session_cookie(bool $secure): string
 
 function ln_is_session_valid(string $secret): bool
 {
+    if ($secret === '' || strlen($secret) < 16) {
+        return false;
+    }
     $value = ln_read_cookie(LN_SESSION_COOKIE);
     if ($value === null) {
         return false;
@@ -79,8 +103,8 @@ function ln_is_session_valid(string $secret): bool
 
 function ln_require_auth(): void
 {
-    $secret = (string) (ln_config()['session_secret'] ?? '');
-    if ($secret === '' || !ln_is_session_valid($secret)) {
+    if (!ln_secrets_configured() || !ln_is_session_valid(ln_session_secret())) {
         ln_json(['error' => 'Требуется вход'], 401);
     }
+    ln_require_same_origin();
 }

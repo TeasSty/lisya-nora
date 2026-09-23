@@ -90,34 +90,51 @@ function ln_is_https(): bool
     if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
         return true;
     }
-    $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
-    return strtolower((string) $proto) === 'https';
+    // X-Forwarded-Proto только если явно разрешено в config (иначе клиент может подделать).
+    $trustProxy = !empty(ln_config()['trust_proxy'] ?? false);
+    if ($trustProxy) {
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+        return strtolower((string) $proto) === 'https';
+    }
+    return false;
 }
 
+/**
+ * IP для rate limit. По умолчанию только REMOTE_ADDR —
+ * X-Forwarded-For / CF-Connecting-IP легко подделать без доверенного прокси.
+ */
 function ln_client_ip(): string
 {
-    $candidates = [
-        $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '',
-        $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',
-        $_SERVER['REMOTE_ADDR'] ?? '',
-    ];
-    foreach ($candidates as $raw) {
-        $raw = trim((string) $raw);
-        if ($raw === '') {
-            continue;
+    $trustProxy = !empty(ln_config()['trust_proxy'] ?? false);
+    if ($trustProxy) {
+        $candidates = [
+            $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '',
+            $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',
+        ];
+        foreach ($candidates as $raw) {
+            $raw = trim((string) $raw);
+            if ($raw === '') {
+                continue;
+            }
+            if (str_contains($raw, ',')) {
+                $raw = trim(explode(',', $raw)[0]);
+            }
+            if (filter_var($raw, FILTER_VALIDATE_IP)) {
+                return $raw;
+            }
         }
-        // X-Forwarded-For: first hop
-        if (str_contains($raw, ',')) {
-            $raw = trim(explode(',', $raw)[0]);
-        }
-        return $raw;
+    }
+
+    $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($remote !== '' && filter_var($remote, FILTER_VALIDATE_IP)) {
+        return $remote;
     }
     $ua = substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 96);
     return $ua !== '' ? 'ua:' . $ua : 'anon';
 }
 
 /**
- * Простой file-based rate limit (shared hosting).
+ * Простой file-based rate limit (shared hosting) с flock.
  * @return array{ok:true}|array{ok:false,retryAfterSec:int}
  */
 function ln_rate_limit(string $key, int $max, int $windowSec = 600): array
@@ -128,27 +145,97 @@ function ln_rate_limit(string $key, int $max, int $windowSec = 600): array
     }
     $file = $dir . '/' . hash('sha256', $key) . '.json';
     $now = time();
-    $data = ['count' => 0, 'resetAt' => $now + $windowSec];
 
-    if (is_file($file)) {
-        $raw = @file_get_contents($file);
-        $parsed = $raw !== false ? json_decode($raw, true) : null;
-        if (is_array($parsed) && isset($parsed['count'], $parsed['resetAt'])) {
-            $data = $parsed;
-        }
-    }
-
-    if (($data['resetAt'] ?? 0) <= $now) {
-        $data = ['count' => 1, 'resetAt' => $now + $windowSec];
-        @file_put_contents($file, json_encode($data), LOCK_EX);
+    $fh = @fopen($file, 'c+');
+    if ($fh === false) {
+        // Нет кэша — не блокируем запросы (fail-open), иначе сломаем сайт.
         return ['ok' => true];
     }
 
-    if (($data['count'] ?? 0) >= $max) {
-        return ['ok' => false, 'retryAfterSec' => max(1, (int) $data['resetAt'] - $now)];
+    try {
+        if (!flock($fh, LOCK_EX)) {
+            return ['ok' => true];
+        }
+
+        $raw = stream_get_contents($fh);
+        $data = ['count' => 0, 'resetAt' => $now + $windowSec];
+        if (is_string($raw) && $raw !== '') {
+            $parsed = json_decode($raw, true);
+            if (is_array($parsed) && isset($parsed['count'], $parsed['resetAt'])) {
+                $data = $parsed;
+            }
+        }
+
+        if (($data['resetAt'] ?? 0) <= $now) {
+            $data = ['count' => 1, 'resetAt' => $now + $windowSec];
+            ftruncate($fh, 0);
+            rewind($fh);
+            fwrite($fh, json_encode($data));
+            fflush($fh);
+            return ['ok' => true];
+        }
+
+        if (($data['count'] ?? 0) >= $max) {
+            return ['ok' => false, 'retryAfterSec' => max(1, (int) $data['resetAt'] - $now)];
+        }
+
+        $data['count'] = (int) $data['count'] + 1;
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, json_encode($data));
+        fflush($fh);
+        return ['ok' => true];
+    } finally {
+        flock($fh, LOCK_UN);
+        fclose($fh);
+    }
+}
+
+/**
+ * Same-origin для cookie-сессии: защита от CSRF при state-changing запросах.
+ * fetch() с same-origin всегда шлёт Origin; старые клиенты — Referer.
+ */
+function ln_request_is_same_origin(): bool
+{
+    $hostHeader = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    if ($hostHeader === '') {
+        return false;
     }
 
-    $data['count'] = (int) $data['count'] + 1;
-    @file_put_contents($file, json_encode($data), LOCK_EX);
-    return ['ok' => true];
+    $expectedHost = strtolower($hostHeader);
+    $check = static function (string $url) use ($expectedHost): bool {
+        $parts = parse_url($url);
+        if ($parts === false || !isset($parts['host'])) {
+            return false;
+        }
+        $host = strtolower((string) $parts['host']);
+        if (isset($parts['port'])) {
+            $host .= ':' . $parts['port'];
+        }
+        return $host === $expectedHost;
+    };
+
+    $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+    if ($origin !== '') {
+        return $check($origin);
+    }
+
+    $referer = trim((string) ($_SERVER['HTTP_REFERER'] ?? ''));
+    if ($referer !== '') {
+        return $check($referer);
+    }
+
+    // Нет Origin/Referer — не браузерный same-origin fetch; отклоняем для cookie-auth.
+    return false;
+}
+
+function ln_require_same_origin(): void
+{
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+        return;
+    }
+    if (!ln_request_is_same_origin()) {
+        ln_json(['error' => 'Некорректный источник запроса'], 403);
+    }
 }

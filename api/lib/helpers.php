@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 const LN_MAX_IMAGE_URL_CHARS = 700_000;
+const LN_MAX_IMAGE_URLS = 12;
 const LN_PRODUCT_CATEGORIES = [
     'seeds', 'ceramics', 'forge', 'dolls', 'jewelry', 'perfume', 'wood', 'candles', 'highlights',
 ];
@@ -58,6 +59,9 @@ function ln_normalize_image_urls(mixed $value): array
     }
     if (!is_array($value)) {
         return ['error' => 'Некорректный список фото'];
+    }
+    if (count($value) > LN_MAX_IMAGE_URLS) {
+        return ['error' => 'Слишком много фото (максимум ' . LN_MAX_IMAGE_URLS . ')'];
     }
     $urls = [];
     foreach ($value as $entry) {

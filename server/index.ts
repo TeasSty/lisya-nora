@@ -35,6 +35,11 @@ function requireEnv(name: string): string {
 const ADMIN_PASSWORD = requireEnv("ADMIN_PASSWORD")
 const SESSION_SECRET = requireEnv("SESSION_SECRET")
 
+if (SESSION_SECRET.length < 16) {
+  console.error("SESSION_SECRET должен быть не короче 16 символов")
+  process.exit(1)
+}
+
 if (!fs.existsSync(CLIENT_DIR)) {
   console.error(
     `Нет собранного фронтенда: ${CLIENT_DIR}\nСначала: npm run build:regru`,

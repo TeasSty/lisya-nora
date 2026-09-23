@@ -62,8 +62,8 @@ function OrderVkCard({ order }: { order: AdminOrder }) {
       firstName: order.vkFirstName ?? '',
       lastName: order.vkLastName ?? '',
     }) || `id${vkUserId}`
-  const profileUrl = order.vkProfileUrl?.trim() || vkProfileUrl(vkUserId)
-  const avatarUrl = order.vkAvatarUrl?.trim() || ''
+  const profileUrl = safeVkProfileHref(order.vkProfileUrl?.trim() || vkProfileUrl(vkUserId), vkUserId)
+  const avatarUrl = safeHttpsImageSrc(order.vkAvatarUrl?.trim() || '')
 
   return (
     <div className="order-row__vk">
@@ -83,6 +83,38 @@ function OrderVkCard({ order }: { order: AdminOrder }) {
       </div>
     </div>
   )
+}
+
+/** Только https://vk.com|vk.ru — защита от javascript: в старых/битых данных. */
+function safeVkProfileHref(raw: string, vkUserId: string): string {
+  const fallback = vkProfileUrl(vkUserId)
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:') return fallback
+    const host = url.hostname.toLowerCase()
+    if (host !== 'vk.com' && host !== 'www.vk.com' && host !== 'm.vk.com' && host !== 'vk.ru' && host !== 'm.vk.ru') {
+      return fallback
+    }
+    return url.toString()
+  } catch {
+    return fallback
+  }
+}
+
+function safeHttpsImageSrc(raw: string): string {
+  if (!raw) return ''
+  try {
+    const url = new URL(raw)
+    return url.protocol === 'https:' ? url.toString() : ''
+  } catch {
+    return ''
+  }
+}
+
+function safeTelHref(phone: string): string {
+  const cleaned = phone.replace(/[^\d+]/g, '')
+  if (!cleaned || cleaned.replace(/\D/g, '').length < 10) return '#'
+  return `tel:${cleaned}`
 }
 
 export function OrdersPanel() {
@@ -286,7 +318,7 @@ export function OrdersPanel() {
                 )}
 
                 <span className="order-row__meta">
-                  <a href={`tel:${order.phone.replace(/\s+/g, '')}`}>{order.phone}</a> ·{' '}
+                  <a href={safeTelHref(order.phone)}>{order.phone}</a> ·{' '}
                   {formatDate(order.createdAt)}
                 </span>
 

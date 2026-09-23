@@ -25,4 +25,11 @@ return [
     'ozon_delivery_client_id' => '',
     'ozon_delivery_client_secret' => '',
     'ozon_delivery_scope' => 'delivery-api.all',
+
+    /**
+     * true только если перед PHP стоит доверенный прокси (Cloudflare / nginx),
+     * который выставляет X-Forwarded-Proto / CF-Connecting-IP.
+     * На обычном Host-0 оставьте false — иначе клиент подделает IP и обойдёт rate limit.
+     */
+    'trust_proxy' => false,
 ];

@@ -211,31 +211,37 @@ try {
 
     // ---------- Admin auth ----------
     if ($method === 'POST' && $path === '/api/admin/login') {
+        ln_require_same_origin();
         $limited = ln_rate_limit('login:' . ln_client_ip(), 10);
         if (!$limited['ok']) {
             header('Retry-After: ' . $limited['retryAfterSec']);
             ln_json(['error' => 'Слишком много попыток входа. Подождите и попробуйте снова.'], 429);
         }
 
+        if (!ln_secrets_configured()) {
+            ln_json(['error' => 'Админ не настроен: задайте admin_password и session_secret (от 16 символов) в config.php'], 500);
+        }
+
         $body = ln_json_body();
         $password = isset($body['password']) && is_string($body['password']) ? $body['password'] : '';
-        $adminPassword = (string) (ln_config()['admin_password'] ?? '');
-        if ($password === '' || !ln_timing_safe_equal($password, $adminPassword)) {
+        if ($password === '' || !ln_timing_safe_equal($password, ln_admin_password())) {
             ln_json(['error' => 'Неверный пароль'], 401);
         }
 
-        $cookie = ln_create_session_cookie((string) ln_config()['session_secret'], ln_is_https());
+        $cookie = ln_create_session_cookie(ln_session_secret(), ln_is_https());
         header('Set-Cookie: ' . $cookie);
         ln_json(['ok' => true]);
     }
 
     if ($method === 'POST' && $path === '/api/admin/logout') {
+        // CSRF: logout тоже мутирует cookie — требуем same-origin.
+        ln_require_same_origin();
         header('Set-Cookie: ' . ln_clear_session_cookie(ln_is_https()));
         ln_json(['ok' => true]);
     }
 
     if ($method === 'GET' && $path === '/api/admin/session') {
-        $valid = ln_is_session_valid((string) (ln_config()['session_secret'] ?? ''));
+        $valid = ln_secrets_configured() && ln_is_session_valid(ln_session_secret());
         ln_json(['authenticated' => $valid]);
     }
 
@@ -246,6 +252,7 @@ try {
         || str_starts_with($path, '/api/admin/categories');
 
     if ($needsAuth) {
+        // Auth + CSRF (Origin/Referer) для всех методов, включая GET с cookie.
         ln_require_auth();
     }
 

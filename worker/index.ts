@@ -24,6 +24,7 @@ interface Env {
 
 /** Сжатые data URL в D1 без R2; для продакшена лучше вынести фото в R2. */
 const MAX_IMAGE_URL_CHARS = 700_000
+const MAX_IMAGE_URLS = 12
 
 /** Мягкий лимит в памяти изолята; на проде лучше Cloudflare Rate Limiting. */
 const RATE_WINDOWS_MS = 10 * 60 * 1000
@@ -36,12 +37,47 @@ const app = new Hono<{ Bindings: Env }>()
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
 
 function clientIp(request: Request): string {
+  // На Cloudflare CF-Connecting-IP ставит край — клиент не подделает.
+  // X-Forwarded-For намеренно не используем (spoofable на Node без прокси).
   const cf = request.headers.get('CF-Connecting-IP')?.trim()
   if (cf) return cf
   const ray = request.headers.get('CF-Ray')?.trim()
   if (ray) return `ray:${ray}`
   const ua = request.headers.get('User-Agent')?.trim().slice(0, 96)
   return ua ? `ua:${ua}` : 'anon'
+}
+
+function requestIsSameOrigin(request: Request): boolean {
+  const url = new URL(request.url)
+  const expectedHost = url.host.toLowerCase()
+  const check = (raw: string): boolean => {
+    try {
+      const parsed = new URL(raw)
+      return parsed.host.toLowerCase() === expectedHost
+    } catch {
+      return false
+    }
+  }
+  const origin = request.headers.get('Origin')?.trim()
+  if (origin) return check(origin)
+  const referer = request.headers.get('Referer')?.trim()
+  if (referer) return check(referer)
+  return false
+}
+
+function requireSameOrigin(request: Request): Response | null {
+  const method = request.method.toUpperCase()
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return null
+  if (!requestIsSameOrigin(request)) {
+    return Response.json({ error: 'Некорректный источник запроса' }, { status: 403 })
+  }
+  return null
+}
+
+function secretsConfigured(env: Env): boolean {
+  const secret = env.SESSION_SECRET?.trim() ?? ''
+  const password = env.ADMIN_PASSWORD ?? ''
+  return secret.length >= 16 && password.length > 0
 }
 
 function checkRateLimit(key: string, max: number): { ok: true } | { ok: false; retryAfterSec: number } {
@@ -84,6 +120,9 @@ function parseImageUrls(raw: string | null | undefined, fallback: string | null)
 function normalizeImageUrls(value: unknown): string[] | { error: string } {
   if (value === null || value === undefined) return []
   if (!Array.isArray(value)) return { error: 'Некорректный список фото' }
+  if (value.length > MAX_IMAGE_URLS) {
+    return { error: `Слишком много фото (максимум ${MAX_IMAGE_URLS})` }
+  }
   const urls: string[] = []
   for (const entry of value) {
     const result = normalizeImageUrl(entry)
@@ -622,6 +661,9 @@ app.post('/api/orders', async (c) => {
 // ---------- Авторизация администратора ----------
 
 app.post('/api/admin/login', async (c) => {
+  const csrf = requireSameOrigin(c.req.raw)
+  if (csrf) return csrf
+
   const limited = checkRateLimit(`login:${clientIp(c.req.raw)}`, RATE_LOGIN_MAX)
   if (!limited.ok) {
     c.header('Retry-After', String(limited.retryAfterSec))
@@ -629,6 +671,13 @@ app.post('/api/admin/login', async (c) => {
   }
 
   try {
+    if (!secretsConfigured(c.env)) {
+      return c.json(
+        { error: 'Админ не настроен: задайте ADMIN_PASSWORD и SESSION_SECRET (от 16 символов)' },
+        500,
+      )
+    }
+
     const body = await c.req.json<{ password?: unknown }>()
     const password = typeof body.password === 'string' ? body.password : ''
 
@@ -646,22 +695,26 @@ app.post('/api/admin/login', async (c) => {
 })
 
 app.post('/api/admin/logout', (c) => {
+  const csrf = requireSameOrigin(c.req.raw)
+  if (csrf) return csrf
   c.header('Set-Cookie', clearSessionCookie(isHttps(c.req.raw)))
   return c.json({ ok: true })
 })
 
 app.get('/api/admin/session', async (c) => {
-  const valid = await isSessionValid(c.req.header('Cookie'), c.env.SESSION_SECRET)
+  const valid =
+    secretsConfigured(c.env) && (await isSessionValid(c.req.header('Cookie'), c.env.SESSION_SECRET))
   return c.json({ authenticated: valid })
 })
 
 // ---------- Защищённые маршруты панели администратора ----------
 
 const requireAuth: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
-  const valid = await isSessionValid(c.req.header('Cookie'), c.env.SESSION_SECRET)
-  if (!valid) {
+  if (!secretsConfigured(c.env) || !(await isSessionValid(c.req.header('Cookie'), c.env.SESSION_SECRET))) {
     return c.json({ error: 'Требуется вход' }, 401)
   }
+  const csrf = requireSameOrigin(c.req.raw)
+  if (csrf) return csrf
   await next()
 }
 
