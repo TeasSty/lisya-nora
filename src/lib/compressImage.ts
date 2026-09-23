@@ -78,7 +78,7 @@ async function encodeDataUrl(
 /**
  * Сжимает фото на клиенте до ~800px по длинной стороне.
  * Предпочитает WebP (quality ~0.8); если браузер не умеет encode — JPEG.
- * Возвращает data URL, пригодный для DEMO_MODE / хранения в imageUrl.
+ * Возвращает data URL, пригодный для хранения в imageUrl (SQLite/D1 TEXT).
  */
 export async function compressImageFile(file: File): Promise<CompressImageResult> {
   if (!file.type.startsWith('image/')) {

@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminLogin, adminSession, ApiError } from '../../lib/api'
-import { DEMO_MODE } from '../../lib/config'
 import { FoxMark } from '../../components/site/FoxMark'
 
 export function AdminLogin() {
@@ -74,13 +73,6 @@ export function AdminLogin() {
             {isSubmitting ? 'Входим…' : 'Войти'}
           </button>
         </form>
-
-        {DEMO_MODE && (
-          <p className="admin-login-hint">
-            Демо-режим: заявки и товары хранятся только в этом браузере. Пароль не публикуется на
-            сайте — возьмите его у разработчика.
-          </p>
-        )}
       </div>
     </div>
   )

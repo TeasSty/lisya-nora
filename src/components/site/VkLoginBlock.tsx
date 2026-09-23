@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEMO_MODE } from '../../lib/config'
 import {
   clearVkSession,
   displayVkInitials,
@@ -19,45 +18,6 @@ interface VkLoginBlockProps {
   onPrefillName?: (name: string) => void
   /** `form` — блок в модалке заявки; `header` — компактный контроль в шапке. */
   variant?: 'form' | 'header'
-}
-
-function DemoVkButton({
-  onLogin,
-  compact,
-}: {
-  onLogin: (user: VkSessionUser) => void
-  compact?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      className={
-        compact
-          ? 'site-header__vk-btn'
-          : 'btn btn-ghost btn-sm vk-login__demo-btn'
-      }
-      onClick={() => {
-        const user: VkSessionUser = {
-          vkUserId: '10001',
-          firstName: 'Анна',
-          lastName: 'Демо',
-          avatarUrl: '',
-          profileUrl: vkProfileUrl(10001),
-        }
-        setVkSession(user)
-        onLogin(user)
-      }}
-    >
-      {compact ? (
-        <>
-          <span className="site-header__vk-btn-full">Войти через VK</span>
-          <span className="site-header__vk-btn-short">VK</span>
-        </>
-      ) : (
-        'Войти через VK (демо)'
-      )}
-    </button>
-  )
 }
 
 function VkProfileChip({
@@ -271,8 +231,7 @@ export function VkLoginBlock({ onPrefillName, variant = 'form' }: VkLoginBlockPr
   }
 
   if (isHeader) {
-    const canShowLogin = VKID_APP_ID > 0 || DEMO_MODE
-    if (!user && !canShowLogin) return null
+    if (!user && VKID_APP_ID <= 0) return null
 
     return (
       <div className="site-header__vk">
@@ -295,9 +254,7 @@ export function VkLoginBlock({ onPrefillName, variant = 'form' }: VkLoginBlockPr
               </>
             )}
           </button>
-        ) : (
-          <DemoVkButton onLogin={applyUser} compact />
-        )}
+        ) : null}
         {loginError && (
           <span className="site-header__vk-error" role="alert">
             {loginError}
@@ -323,8 +280,6 @@ export function VkLoginBlock({ onPrefillName, variant = 'form' }: VkLoginBlockPr
         <>
           {VKID_APP_ID > 0 ? (
             <div className="vk-login__onetap" ref={containerRef} />
-          ) : DEMO_MODE ? (
-            <DemoVkButton onLogin={applyUser} />
           ) : (
             <p className="field-hint">Вход через VK пока не настроен на этом сайте.</p>
           )}

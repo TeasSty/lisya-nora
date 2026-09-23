@@ -27,6 +27,7 @@ worker-configuration.d.ts
 *.env
 .env
 .env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -38,3 +39,8 @@ worker-configuration.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Node / reg.ru SQLite
+data/
+*.sqlite
+*.sqlite-*

@@ -11,7 +11,12 @@
     "deploy": "vite build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "db:migrate:local": "wrangler d1 migrations apply lisya-nora-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply lisya-nora-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply lisya-nora-db --remote",
+    "build:regru": "tsc -b && vite build --config vite.config.reg.ts",
+    "start": "tsx server/index.ts",
+    "start:regru": "tsx server/index.ts",
+    "db:migrate:node": "tsx server/migrate.ts",
+    "dev:node": "tsx watch server/index.ts"
   },
   "dependencies": {
     "@vkid/sdk": "^2.6.8",
@@ -20,7 +25,11 @@
     "lucide-react": "^1.47.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.4",
+    "@hono/node-server": "^1.19.0",
+    "better-sqlite3": "^12.2.0",
+    "dotenv": "^17.2.2",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.54.11",
@@ -33,10 +42,12 @@
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "wrangler": "^4.133.0"
+    "wrangler": "^4.133.0",
+    "@types/better-sqlite3": "^7.6.13"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
-    "workerd@1.20260916.1": true
+    "workerd@1.20260916.1": true,
+    "better-sqlite3": true
   }
 }
