@@ -35,5 +35,7 @@ Options -Indexes
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set X-Frame-Options "SAMEORIGIN"
   Header set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
-  Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://id.vk.com https://id.vk.ru https://api.vk.com https://login.vk.com https://*.vk.com https://*.vk.ru https://*.userapi.com; frame-src https://id.vk.com https://id.vk.ru https://login.vk.com https://*.vk.com https://*.vk.ru; worker-src 'self' blob:; media-src 'self'"
+  # connect-src: Nominatim для подсказок адреса; OSM tiles грузятся как img (img-src https:).
+  # Google Fonts остаются — без них витрина не ломается (системный fallback).
+  Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://nominatim.openstreetmap.org https://id.vk.com https://id.vk.ru https://api.vk.com https://login.vk.com https://*.vk.com https://*.vk.ru https://*.userapi.com; frame-src https://id.vk.com https://id.vk.ru https://login.vk.com https://*.vk.com https://*.vk.ru; worker-src 'self' blob:; media-src 'self'"
 </IfModule>
