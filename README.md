@@ -229,39 +229,207 @@ shared-хостинг без Node этот backend не запустит.
 
 ## Деплой на reg.ru (основной боевой путь)
 
-Сайт — **Vite SPA + API на Hono**. На reg.ru это живёт на **VPS** или тарифе с **Node.js**.
-База — **SQLite** (те же SQL-миграции, что для Cloudflare D1).
+Сайт — **Vite SPA + API на Hono + SQLite**. На reg.ru нужен **VPS с Ubuntu**
+(или любой Linux VPS), **не** обычный PHP shared-хостинг: там нет Node.js,
+SQLite-файла на диске и нормального HTTPS-прокси до нашего процесса.
 
-### Что уже готово в репозитории
+В репозитории уже есть: `server/`, `npm run build:regru`, `.env.example`,
+`Dockerfile` + `docker-compose.yml`. Ниже — чеклист «сегодня открыть сайт с SSL».
 
-- Node-сервер: `server/` (тот же API из `worker/` + статика `dist/client`)
-- Сборка: `npm run build:regru`
-- Пример секретов: `.env.example` → скопируйте в `.env` на сервере
-- Docker: `Dockerfile` + `docker-compose.yml`
+### 1. Заказать VPS на reg.ru
 
-### Что нужно сделать вам в панели reg.ru / на VPS
+1. В личном кабинете reg.ru закажите **VPS** (облачный сервер), ОС **Ubuntu 22.04**
+   или 24.04.
+2. Запомните **IP-адрес** сервера и пароль/ключ root (или создайте пользователя).
+3. **Не** берите «хостинг сайтов» / PHP / ISPmanager только под статику — этот
+   проект запускается как Node-приложение (порт 3000) + reverse proxy с HTTPS.
 
-1. VPS или хостинг **с Node.js 20+** (не голый PHP shared).
-2. DNS домена → IP VPS (A/AAAA).
-3. SSH: скопировать проект, `cp .env.example .env`, задать `ADMIN_PASSWORD` и `SESSION_SECRET`.
-4. Опционально: ключи Ozon; `VITE_VKID_APP_ID` перед сборкой (можно позже).
-5. `npm ci` → `npm run build:regru` → `npm start` (порт 3000).
-6. nginx/Caddy: HTTPS домена → `http://127.0.0.1:3000`.
-7. Обновить canonical / og:url в `index.html` на боевой домен и пересобрать.
+### 2. DNS: домен → IP VPS
 
-Docker: `cp .env.example .env` → правите → `docker compose up -d --build`.
+В панели DNS домена (reg.ru или где куплен домен):
 
-### Переменные
+1. Создайте запись **A**: имя `@` (или `www`) → **IP вашего VPS**.
+2. Подождите 5–60 минут (иногда дольше), пока DNS обновится.
+3. Проверка с вашего ПК: `ping ваш-домен.ru` — должен показать IP VPS.
+
+Для SSL сертификат выпустится только когда домен уже указывает на этот сервер.
+
+### 3. Войти по SSH
+
+С Windows (PowerShell) или с Mac/Linux:
+
+```bash
+ssh root@IP_ВАШЕГО_VPS
+```
+
+Дальше все команды — **на сервере**, если не сказано иное.
+
+### 4. Поставить Node 20+ **или** Docker
+
+**Вариант A — Node (проще для первого раза):**
+
+```bash
+# Ubuntu: Node 22 через NodeSource
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs build-essential git
+node -v   # должно быть v20+ (лучше 22)
+```
+
+**Вариант B — Docker** (если привычнее контейнеры):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-v2 git
+sudo systemctl enable --now docker
+```
+
+### 5. Код на сервер и файл `.env`
+
+```bash
+cd /opt
+sudo git clone https://github.com/TeasSty/lisya-nora.git
+cd lisya-nora
+cp .env.example .env
+nano .env   # или любой редактор
+```
+
+В `.env` на сервере обязательно задайте (свои значения, **не** в чат и не в git):
+
+- `ADMIN_PASSWORD` — пароль входа в `/admin`
+- `SESSION_SECRET` — длинная случайная строка
+- `PORT=3000` (можно оставить)
+- по желанию: `OZON_DELIVERY_*`, `VITE_VKID_APP_ID` (VK — **до** сборки)
+
+### 6. Сборка и запуск приложения
+
+**Без Docker:**
+
+```bash
+cd /opt/lisya-nora
+npm ci
+npm run build:regru
+npm start
+```
+
+Приложение слушает `http://127.0.0.1:3000` (и `0.0.0.0:3000`). Для фона
+удобно systemd или `pm2`:
+
+```bash
+sudo npm i -g pm2
+pm2 start "npm start" --name lisya-nora
+pm2 save
+pm2 startup
+```
+
+**С Docker:**
+
+```bash
+cd /opt/lisya-nora
+# .env уже заполнен
+docker compose up -d --build
+```
+
+Контейнер отдаёт порт **3000**. Снаружи наружу открываем только 80/443 (см. ниже).
+
+### 7. HTTPS (SSL) — выберите один способ
+
+Откройте в файрволе порты **80** и **443** (панель VPS reg.ru и/или `ufw`):
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+#### Способ 1 — Caddy (рекомендуем: SSL сам)
+
+```bash
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt-get update
+sudo apt-get install -y caddy
+```
+
+Файл `/etc/caddy/Caddyfile` (подставьте свой домен):
+
+```
+ваш-домен.ru {
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+```bash
+sudo systemctl reload caddy
+```
+
+Caddy сам получит Let's Encrypt сертификат. Сайт: `https://ваш-домен.ru`.
+
+#### Способ 2 — nginx + Certbot
+
+```bash
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+```
+
+Сайт `/etc/nginx/sites-available/lisya-nora`:
+
+```nginx
+server {
+    listen 80;
+    server_name ваш-домен.ru www.ваш-домен.ru;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/lisya-nora /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d ваш-домен.ru -d www.ваш-домен.ru
+```
+
+Certbot сам допишет HTTPS. Обновление сертификата — через таймер certbot.
+
+### 8. Канонический URL под ваш домен
+
+В `index.html` сейчас указан прежний GitHub Pages адрес. Перед финальной сборкой
+замените `canonical`, `og:url`, `og:image`, `twitter:image` на
+`https://ваш-домен.ru/` (и картинку og на тот же домен). База Vite для reg.ru уже
+`/` (`vite.config.reg.ts`) — менять не нужно, если сайт на корне домена.
+
+После правки на сервере:
+
+```bash
+npm run build:regru
+# и перезапуск: pm2 restart lisya-nora   или   docker compose up -d --build
+```
+
+### 9. Проверка после запуска
+
+1. В браузере: `https://ваш-домен.ru` — сайт открывается, замок SSL есть.
+2. `https://ваш-домен.ru/api/products` — JSON каталога (не 404/502).
+3. `https://ваш-домен.ru/admin` — вход паролем из `.env` (`ADMIN_PASSWORD`).
+
+### Переменные `.env`
 
 | Имя | Обязательно |
 |-----|-------------|
 | `ADMIN_PASSWORD` | да |
 | `SESSION_SECRET` | да |
+| `PORT` / `HOST` | нет (`3000` / `0.0.0.0`) |
 | `DATABASE_PATH` | нет (`./data/lisya-nora.sqlite`) |
 | `OZON_DELIVERY_CLIENT_ID` / `SECRET` | нет |
-| `VITE_VKID_APP_ID` | нет (на этапе сборки) |
+| `VITE_VKID_APP_ID` | нет (нужен **до** `build:regru`) |
 
-Секреты в git не кладём.
+Секреты в git не кладём. Разбор безопасности кода — отдельным шагом позже.
 
 ### Альтернатива: Cloudflare + домен reg.ru
 
