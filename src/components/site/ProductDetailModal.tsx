@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { type CategoryMeta, categoryLabel, DEFAULT_CATEGORIES } from '../../lib/categories'
 import type { Product } from '../../lib/types'
 import { AddToCartControl } from './AddToCartControl'
@@ -63,7 +64,7 @@ export function ProductDetailModal({
     }
   }, [onClose])
 
-  return (
+  return createPortal(
     <div
       className="modal-overlay product-detail-overlay"
       onMouseDown={(e) => {
@@ -106,6 +107,7 @@ export function ProductDetailModal({
           <AddToCartControl product={product} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

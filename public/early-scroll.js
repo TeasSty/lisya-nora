@@ -1,5 +1,6 @@
 /**
  * Early: on F5 keep scroll position (hash like #o-magazine must not yank the page).
+ * Instant jump only — never inherit html { scroll-behavior: smooth } (that “flies” down).
  * Вынесено из inline <script>, чтобы CSP мог обойтись без script-src 'unsafe-inline'.
  */
 (function () {
@@ -17,7 +18,15 @@
     if (!data || data.path !== path || typeof data.y !== 'number') return
     var y = data.y
     var pin = function () {
-      window.scrollTo(0, y)
+      var root = document.documentElement
+      var prev = root.style.scrollBehavior
+      root.style.scrollBehavior = 'auto'
+      try {
+        window.scrollTo({ top: y, left: 0, behavior: 'instant' })
+      } catch (e) {
+        window.scrollTo(0, y)
+      }
+      root.style.scrollBehavior = prev
     }
     pin()
     document.addEventListener('DOMContentLoaded', pin)

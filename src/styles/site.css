@@ -26,8 +26,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 24px;
+  padding: 2px 24px;
   gap: 12px;
+  min-height: 0;
 }
 
 .site-header__brand {
@@ -39,26 +40,56 @@
 }
 
 .fox-mark {
-  width: 96px;
-  height: 96px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
 }
 
+/* Compact logo: scales with viewport height so short screens don't lose modal space */
 .site-header__brand .fox-mark {
-  width: 108px;
-  height: 108px;
+  width: clamp(48px, 7.5vh, 72px);
+  height: clamp(48px, 7.5vh, 72px);
 }
 
 @media (max-width: 479px) {
   .site-header__brand .fox-mark {
-    width: 88px;
-    height: 88px;
+    width: clamp(44px, 7vh, 56px);
+    height: clamp(44px, 7vh, 56px);
   }
 
   .site-header__inner {
-    padding: 4px 16px;
+    padding: 2px 16px;
+  }
+}
+
+@media (max-height: 720px) {
+  .site-header__brand .fox-mark {
+    width: clamp(40px, 6.5vh, 56px);
+    height: clamp(40px, 6.5vh, 56px);
+  }
+
+  .site-header__cart,
+  .site-header__menu-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .site-header__vk-btn,
+  .site-header__vk-user {
+    height: 34px;
+  }
+}
+
+@media (max-height: 560px) {
+  .site-header__brand .fox-mark {
+    width: clamp(36px, 5.5vh, 48px);
+    height: clamp(36px, 5.5vh, 48px);
+  }
+
+  .site-header__inner {
+    padding-block: 0;
   }
 }
 
@@ -1409,7 +1440,8 @@
    Деталка товара (галерея + описание)
    ========================================================= */
 .product-detail-overlay {
-  z-index: 310;
+  /* Above sticky header (250); keep below PVZ picker (400) */
+  z-index: 320;
 }
 
 .product-detail {
@@ -1418,7 +1450,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: min(94vh, 100%);
+  /* Leave room under sticky header on short viewports */
+  max-height: min(92dvh, calc(100dvh - 12px));
 }
 
 .product-detail .modal-panel__close {
@@ -1549,12 +1582,16 @@
 @media (min-width: 640px) {
   .modal-overlay {
     align-items: center;
-    padding: 24px;
+    padding: max(16px, 3vh) 24px;
   }
 
   .modal-panel {
     border-radius: var(--radius-lg);
     padding: 28px 24px 32px;
+  }
+
+  .product-detail-overlay {
+    padding-top: max(12px, 2vh);
   }
 }
 

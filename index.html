@@ -46,11 +46,11 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <!-- Before first paint: disable browser scroll restore + pin Y on F5 (instant, not smooth). -->
+    <script src="./early-scroll.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Early: on F5 keep scroll position (hash like #o-magazine must not yank the page). -->
-    <script src="./early-scroll.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

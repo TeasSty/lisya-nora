@@ -43,6 +43,19 @@ function isReload(): boolean {
   return (performance as Performance & { navigation?: { type: number } }).navigation?.type === 1
 }
 
+/** Instant jump — never inherit html { scroll-behavior: smooth }. */
+function scrollInstant(y: number) {
+  const root = document.documentElement
+  const prev = root.style.scrollBehavior
+  root.style.scrollBehavior = 'auto'
+  try {
+    window.scrollTo({ top: y, left: 0, behavior: 'instant' as ScrollBehavior })
+  } catch {
+    window.scrollTo(0, y)
+  }
+  root.style.scrollBehavior = prev
+}
+
 /**
  * Keep the viewport where the user left it on F5.
  * Nav hash links (#o-magazine etc.) still work on first open / in-page clicks,
@@ -74,7 +87,7 @@ export function initScrollRestore() {
 
     const apply = () => {
       if (!armed) return
-      window.scrollTo(0, targetY)
+      scrollInstant(targetY)
     }
 
     window.__lisyaRestoreScroll = apply
@@ -127,7 +140,14 @@ export function initScrollRestore() {
     const id = decodeURIComponent(location.hash.slice(1))
     if (!id) return
     const go = () => {
-      document.getElementById(id)?.scrollIntoView()
+      const el = document.getElementById(id)
+      if (!el) return
+      const root = document.documentElement
+      const prev = root.style.scrollBehavior
+      // Hash landing on first visit can stay smooth; reload path never reaches here.
+      root.style.scrollBehavior = ''
+      el.scrollIntoView()
+      root.style.scrollBehavior = prev
     }
     requestAnimationFrame(() => {
       go()
