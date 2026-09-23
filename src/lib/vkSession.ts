@@ -9,6 +9,7 @@ export interface VkSessionUser {
 }
 
 const STORAGE_KEY = 'lisya-nora-vk-session'
+const SESSION_EVENT = 'lisya-nora-vk-session'
 
 export function vkProfileUrl(userId: string | number): string {
   const id = String(userId).replace(/\D/g, '')
@@ -36,16 +37,39 @@ export function getVkSession(): VkSessionUser | null {
   }
 }
 
+function emitVkSession(user: VkSessionUser | null): void {
+  window.dispatchEvent(new CustomEvent(SESSION_EVENT, { detail: user }))
+}
+
 export function setVkSession(user: VkSessionUser): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+  emitVkSession(user)
 }
 
 export function clearVkSession(): void {
   sessionStorage.removeItem(STORAGE_KEY)
+  emitVkSession(null)
+}
+
+/** Подписка на вход/выход VK в этой вкладке (шапка + форма заявки). */
+export function subscribeVkSession(onChange: (user: VkSessionUser | null) => void): () => void {
+  const handler = (event: Event) => {
+    const detail = (event as CustomEvent<VkSessionUser | null>).detail
+    onChange(detail === undefined ? getVkSession() : detail)
+  }
+  window.addEventListener(SESSION_EVENT, handler)
+  return () => window.removeEventListener(SESSION_EVENT, handler)
 }
 
 export function displayVkName(user: Pick<VkSessionUser, 'firstName' | 'lastName'>): string {
   return [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
+}
+
+export function displayVkInitials(user: Pick<VkSessionUser, 'firstName' | 'lastName'>): string {
+  const a = user.firstName.trim().charAt(0)
+  const b = user.lastName.trim().charAt(0)
+  const initials = `${a}${b}`.toUpperCase()
+  return initials || 'VK'
 }
 
 /** Поля профиля для submitOrder — пустой объект, если гость без входа. */

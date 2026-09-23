@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../../lib/cart'
 import { FoxMark } from './FoxMark'
+import { VkLoginBlock } from './VkLoginBlock'
 
 const NAV_LINKS = [
   { href: '#nora', label: 'Каталог' },
@@ -79,6 +80,8 @@ export function Header() {
             +7 921 332-64-27
           </a>
 
+          <VkLoginBlock variant="header" />
+
           <button
             type="button"
             className="site-header__cart"
@@ -132,6 +135,9 @@ export function Header() {
             >
               Корзина{count > 0 ? ` (${count})` : ''}
             </button>
+          </li>
+          <li className="site-mobile-nav__vk" onClick={() => setIsOpen(false)}>
+            <VkLoginBlock variant="header" />
           </li>
           <li>
             <a href="tel:+79213326427" onClick={() => setIsOpen(false)}>

@@ -233,9 +233,11 @@ VITE_VKID_APP_ID=12345678
 Локально — в `.env` / `.env.local` (файлы `.env*` в git не коммитятся). Для GitHub Pages —
 секрет репозитория / переменная Actions, которую подставляет workflow при `npm run build`.
 
-Без `VITE_VKID_APP_ID` в демо-режиме (`DEMO_MODE = true`) показывается кнопка
-«Войти через VK (демо)» для проверки админки. На боевом сайте с `DEMO_MODE = false`
-реальный OneTap появляется только после указания App ID.
+Без `VITE_VKID_APP_ID` в демо-режиме (`DEMO_MODE = true`) в шапке и в форме заявки
+показывается кнопка «Войти через VK (демо)» для проверки. На боевом сайте с
+`DEMO_MODE = false` без App ID кнопка в шапке скрыта; в форме остаётся короткая
+подсказка «не настроен». С App ID — компактный вход в шапке и OneTap в модалке заказа;
+сессия общая (`sessionStorage`).
 
 Миграция D1: `migrations/0011_vk_profile.sql` (после деплоя backend —
 `npm run db:migrate:remote`).

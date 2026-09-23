@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { DEMO_MODE } from '../../lib/config'
 import {
   clearVkSession,
+  displayVkInitials,
   displayVkName,
   getVkSession,
   setVkSession,
+  subscribeVkSession,
   vkProfileUrl,
   type VkSessionUser,
 } from '../../lib/vkSession'
@@ -15,13 +17,25 @@ const VKID_APP_ID = Number(import.meta.env.VITE_VKID_APP_ID) || 0
 interface VkLoginBlockProps {
   /** Подставить имя из VK в поле заявки, если оно ещё пустое. */
   onPrefillName?: (name: string) => void
+  /** `form` — блок в модалке заявки; `header` — компактный контроль в шапке. */
+  variant?: 'form' | 'header'
 }
 
-function DemoVkButton({ onLogin }: { onLogin: (user: VkSessionUser) => void }) {
+function DemoVkButton({
+  onLogin,
+  compact,
+}: {
+  onLogin: (user: VkSessionUser) => void
+  compact?: boolean
+}) {
   return (
     <button
       type="button"
-      className="btn btn-ghost btn-sm vk-login__demo-btn"
+      className={
+        compact
+          ? 'site-header__vk-btn'
+          : 'btn btn-ghost btn-sm vk-login__demo-btn'
+      }
       onClick={() => {
         const user: VkSessionUser = {
           vkUserId: '10001',
@@ -34,7 +48,14 @@ function DemoVkButton({ onLogin }: { onLogin: (user: VkSessionUser) => void }) {
         onLogin(user)
       }}
     >
-      Войти через VK (демо)
+      {compact ? (
+        <>
+          <span className="site-header__vk-btn-full">Войти через VK</span>
+          <span className="site-header__vk-btn-short">VK</span>
+        </>
+      ) : (
+        'Войти через VK (демо)'
+      )}
     </button>
   )
 }
@@ -42,18 +63,40 @@ function DemoVkButton({ onLogin }: { onLogin: (user: VkSessionUser) => void }) {
 function VkProfileChip({
   user,
   onLogout,
+  compact,
 }: {
   user: VkSessionUser
   onLogout: () => void
+  compact?: boolean
 }) {
   const name = displayVkName(user) || `id${user.vkUserId}`
+  const initials = displayVkInitials(user)
+
+  if (compact) {
+    return (
+      <div className="site-header__vk-user">
+        {user.avatarUrl ? (
+          <img className="site-header__vk-avatar" src={user.avatarUrl} alt="" width={28} height={28} />
+        ) : (
+          <span className="site-header__vk-avatar site-header__vk-avatar--placeholder" aria-hidden="true">
+            {initials}
+          </span>
+        )}
+        <span className="site-header__vk-name">{user.firstName || name}</span>
+        <button type="button" className="site-header__vk-logout" onClick={onLogout} title="Выйти из VK">
+          Выйти
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="vk-login__chip">
       {user.avatarUrl ? (
         <img className="vk-login__avatar" src={user.avatarUrl} alt="" width={36} height={36} />
       ) : (
         <span className="vk-login__avatar vk-login__avatar--placeholder" aria-hidden="true">
-          VK
+          {initials}
         </span>
       )}
       <div className="vk-login__chip-text">
@@ -69,13 +112,45 @@ function VkProfileChip({
   )
 }
 
-export function VkLoginBlock({ onPrefillName }: VkLoginBlockProps) {
+async function loginViaVkSdk(): Promise<VkSessionUser> {
+  const VKID = await import('@vkid/sdk')
+  VKID.Config.init({
+    app: VKID_APP_ID,
+    redirectUrl: window.location.origin + window.location.pathname,
+    responseMode: VKID.ConfigResponseMode.Callback,
+    mode: VKID.ConfigAuthMode.InNewTab,
+    scope: 'vkid.personal_info',
+  })
+
+  const payload = (await VKID.Auth.login()) as { code?: string; device_id?: string }
+  if (!payload?.code || !payload?.device_id) {
+    throw new Error('empty auth payload')
+  }
+
+  const tokens = await VKID.Auth.exchangeCode(payload.code, payload.device_id)
+  const info = await VKID.Auth.userInfo(tokens.access_token)
+  const profile = info.user ?? {}
+  const vkUserId = String(profile.user_id ?? tokens.user_id ?? '')
+  if (!vkUserId) throw new Error('empty user id')
+
+  return {
+    vkUserId,
+    firstName: profile.first_name?.trim() ?? '',
+    lastName: profile.last_name?.trim() ?? '',
+    avatarUrl: profile.avatar?.trim() ?? '',
+    profileUrl: vkProfileUrl(vkUserId),
+  }
+}
+
+export function VkLoginBlock({ onPrefillName, variant = 'form' }: VkLoginBlockProps) {
   const [user, setUser] = useState<VkSessionUser | null>(() => getVkSession())
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const prefilledRef = useRef(false)
   const onPrefillNameRef = useRef(onPrefillName)
   onPrefillNameRef.current = onPrefillName
+  const isHeader = variant === 'header'
 
   function applyUser(next: VkSessionUser) {
     setUser(next)
@@ -95,8 +170,20 @@ export function VkLoginBlock({ onPrefillName }: VkLoginBlockProps) {
     prefilledRef.current = false
   }
 
+  useEffect(() => subscribeVkSession((next) => {
+    setUser(next)
+    if (!next) prefilledRef.current = false
+    else if (!prefilledRef.current) {
+      const name = displayVkName(next)
+      if (name) {
+        onPrefillNameRef.current?.(name)
+        prefilledRef.current = true
+      }
+    }
+  }), [])
+
   useEffect(() => {
-    if (user || !VKID_APP_ID || !containerRef.current) return
+    if (isHeader || user || !VKID_APP_ID || !containerRef.current) return
 
     const container = containerRef.current
     let cancelled = false
@@ -166,7 +253,59 @@ export function VkLoginBlock({ onPrefillName }: VkLoginBlockProps) {
       }
       container.innerHTML = ''
     }
-  }, [user])
+  }, [user, isHeader])
+
+  async function handleHeaderLogin() {
+    if (isLoggingIn) return
+    setIsLoggingIn(true)
+    setLoginError(null)
+    try {
+      const next = await loginViaVkSdk()
+      setVkSession(next)
+      applyUser(next)
+    } catch {
+      setLoginError('Не удалось войти через VK')
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
+  if (isHeader) {
+    const canShowLogin = VKID_APP_ID > 0 || DEMO_MODE
+    if (!user && !canShowLogin) return null
+
+    return (
+      <div className="site-header__vk">
+        {user ? (
+          <VkProfileChip user={user} onLogout={handleLogout} compact />
+        ) : VKID_APP_ID > 0 ? (
+          <button
+            type="button"
+            className="site-header__vk-btn"
+            onClick={() => void handleHeaderLogin()}
+            disabled={isLoggingIn}
+            aria-label="Войти через VK"
+          >
+            {isLoggingIn ? (
+              'Вход…'
+            ) : (
+              <>
+                <span className="site-header__vk-btn-full">Войти через VK</span>
+                <span className="site-header__vk-btn-short">VK</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <DemoVkButton onLogin={applyUser} compact />
+        )}
+        {loginError && (
+          <span className="site-header__vk-error" role="alert">
+            {loginError}
+          </span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="vk-login">
