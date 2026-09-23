@@ -85,12 +85,12 @@ body.nav-open {
 }
 
 :root {
-  --header-offset: 82px;
+  --header-offset: 92px;
 }
 
 @media (max-width: 479px) {
   :root {
-    --header-offset: 70px;
+    --header-offset: 78px;
   }
 }
 
