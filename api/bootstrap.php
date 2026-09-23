@@ -5,6 +5,25 @@ declare(strict_types=1);
  * Bootstrap: config + PDO. Zero Composer deps.
  */
 
+/**
+ * Базовые security-заголовки для API-ответов.
+ * CSP для HTML-страниц SPA задаётся в public/.htaccess (mod_headers).
+ */
+function ln_send_security_headers(): void
+{
+    static $sent = false;
+    if ($sent) {
+        return;
+    }
+    $sent = true;
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    // API отдаёт только JSON — жёсткий CSP на всякий случай.
+    header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+}
+
 function ln_config(): array
 {
     static $config = null;
@@ -14,6 +33,7 @@ function ln_config(): array
 
     $path = __DIR__ . '/config.php';
     if (!is_file($path)) {
+        ln_send_security_headers();
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
@@ -24,6 +44,7 @@ function ln_config(): array
 
     $loaded = require $path;
     if (!is_array($loaded)) {
+        ln_send_security_headers();
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'api/config.php должен возвращать массив'], JSON_UNESCAPED_UNICODE);
@@ -57,6 +78,7 @@ function ln_db(): PDO
         ]);
     } catch (Throwable $e) {
         error_log('PDO connect failed: ' . $e->getMessage());
+        ln_send_security_headers();
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Не удалось подключиться к базе данных'], JSON_UNESCAPED_UNICODE);
@@ -78,6 +100,7 @@ function ln_json_body(): array
 
 function ln_json(mixed $data, int $status = 200): void
 {
+    ln_send_security_headers();
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');

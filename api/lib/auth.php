@@ -38,17 +38,103 @@ function ln_session_secret(): string
     return trim((string) (ln_config()['session_secret'] ?? ''));
 }
 
-function ln_admin_password(): string
+/** bcrypt/argon2 hash из config (предпочтительно). */
+function ln_admin_password_hash(): string
+{
+    return trim((string) (ln_config()['admin_password_hash'] ?? ''));
+}
+
+/**
+ * Устаревший plaintext из config (только миграция).
+ * Не использовать как постоянный способ хранения.
+ */
+function ln_admin_password_legacy(): string
 {
     return (string) (ln_config()['admin_password'] ?? '');
 }
 
-/** Секрет слишком короткий — подпись cookie бессмысленна. */
+function ln_is_password_hash(string $hash): bool
+{
+    if ($hash === '') {
+        return false;
+    }
+    return str_starts_with($hash, '$2y$')
+        || str_starts_with($hash, '$2a$')
+        || str_starts_with($hash, '$2b$')
+        || str_starts_with($hash, '$argon2i$')
+        || str_starts_with($hash, '$argon2id$');
+}
+
+/** Секрет и пароль (hash или legacy plaintext) настроены. */
 function ln_secrets_configured(): bool
 {
     $secret = ln_session_secret();
-    $password = ln_admin_password();
-    return $secret !== '' && strlen($secret) >= 16 && $password !== '';
+    if ($secret === '' || strlen($secret) < 16) {
+        return false;
+    }
+    $hash = ln_admin_password_hash();
+    if (ln_is_password_hash($hash)) {
+        return true;
+    }
+    return ln_admin_password_legacy() !== '';
+}
+
+function ln_verify_admin_password(string $password): bool
+{
+    if ($password === '') {
+        return false;
+    }
+    $hash = ln_admin_password_hash();
+    if (ln_is_password_hash($hash)) {
+        return password_verify($password, $hash);
+    }
+    $legacy = ln_admin_password_legacy();
+    if ($legacy === '') {
+        return false;
+    }
+    return ln_timing_safe_equal($password, $legacy);
+}
+
+/**
+ * После успешного входа по legacy plaintext: записать admin_password_hash
+ * и убрать plaintext из config.php (если файл доступен на запись).
+ * Не блокирует вход, если переписать не удалось.
+ */
+function ln_try_migrate_admin_password_hash(string $plainPassword): bool
+{
+    if (ln_is_password_hash(ln_admin_password_hash())) {
+        return false;
+    }
+    $legacy = ln_admin_password_legacy();
+    if ($legacy === '' || !ln_timing_safe_equal($plainPassword, $legacy)) {
+        return false;
+    }
+
+    $configPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';
+    if (!is_file($configPath) || !is_writable($configPath)) {
+        error_log('ln: не удалось мигрировать admin_password — config.php недоступен для записи');
+        return false;
+    }
+
+    $config = ln_config();
+    if (!is_array($config)) {
+        return false;
+    }
+    $config['admin_password_hash'] = password_hash($plainPassword, PASSWORD_DEFAULT);
+    unset($config['admin_password']);
+
+    $export = var_export($config, true);
+    $content = "<?php\ndeclare(strict_types=1);\n\n/** Авто-миграция: plaintext admin_password заменён на hash. */\nreturn " . $export . ";\n";
+
+    $tmp = $configPath . '.tmp.' . bin2hex(random_bytes(4));
+    if (file_put_contents($tmp, $content, LOCK_EX) === false) {
+        return false;
+    }
+    if (!rename($tmp, $configPath)) {
+        @unlink($tmp);
+        return false;
+    }
+    return true;
 }
 
 function ln_create_session_cookie(string $secret, bool $secure): string

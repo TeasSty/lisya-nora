@@ -34,6 +34,14 @@ const RATE_OZON_PVZ_MAX = 20
 
 const app = new Hono<{ Bindings: Env }>()
 
+app.use('*', async (c, next) => {
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  c.header('X-Frame-Options', 'SAMEORIGIN')
+  c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()')
+  await next()
+})
+
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
 
 function clientIp(request: Request): string {
@@ -96,6 +104,33 @@ function checkRateLimit(key: string, max: number): { ok: true } | { ok: false; r
 
 function phoneDigitCount(phone: string): number {
   return phone.replace(/\D/g, '').length
+}
+
+function detectImageMime(bytes: Uint8Array): string | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'image/jpeg'
+  }
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return 'image/png'
+  }
+  if (bytes.length >= 6) {
+    const head = String.fromCharCode(...bytes.slice(0, 6))
+    if (head === 'GIF87a' || head === 'GIF89a') return 'image/gif'
+  }
+  if (
+    bytes.length >= 12 &&
+    String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
+    String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP'
+  ) {
+    return 'image/webp'
+  }
+  return null
 }
 
 function isHttps(request: Request): boolean {
@@ -724,6 +759,38 @@ app.use('/api/admin/products/*', requireAuth)
 app.use('/api/admin/products', requireAuth)
 app.use('/api/admin/categories/*', requireAuth)
 app.use('/api/admin/categories', requireAuth)
+app.use('/api/admin/upload-image', requireAuth)
+
+/** Лёгкий parity с Host-0: без диска Worker возвращает data URL (лимит D1 TEXT). */
+app.post('/api/admin/upload-image', async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    if (!(file instanceof File)) {
+      return c.json({ error: 'Пришлите файл в поле file (multipart/form-data)' }, 400)
+    }
+    if (file.size <= 0 || file.size > 600_000) {
+      return c.json({ error: 'Фото слишком большое (макс. ~600 КБ после сжатия)' }, 400)
+    }
+    const buf = new Uint8Array(await file.arrayBuffer())
+    const mime = detectImageMime(buf)
+    if (!mime) {
+      return c.json({ error: 'Допустимы только JPEG, PNG, WebP или GIF' }, 400)
+    }
+    let binary = ''
+    for (let i = 0; i < buf.length; i++) {
+      binary += String.fromCharCode(buf[i]!)
+    }
+    const url = `data:${mime};base64,${btoa(binary)}`
+    if (url.length > MAX_IMAGE_URL_CHARS) {
+      return c.json({ error: 'Фото слишком большое после кодирования' }, 400)
+    }
+    return c.json({ ok: true, url })
+  } catch (error) {
+    console.error('POST /api/admin/upload-image failed', error)
+    return c.json({ error: 'Не удалось загрузить фото' }, 500)
+  }
+})
 
 app.get('/api/admin/orders', async (c) => {
   try {

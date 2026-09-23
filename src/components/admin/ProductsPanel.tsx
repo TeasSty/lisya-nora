@@ -7,6 +7,7 @@ import {
   fetchAdminCategories,
   fetchAdminProducts,
   updateAdminProduct,
+  uploadAdminImage,
   type ProductInput,
 } from '../../lib/api'
 import { compressImageFile } from '../../lib/compressImage'
@@ -101,7 +102,7 @@ export function ProductsPanel() {
     })
     setFormError(null)
     setImageNote(null)
-    setShowUrlField(Boolean(urls[0] && !urls[0].startsWith('data:')))
+    setShowUrlField(Boolean(urls[0] && /^https?:\/\//i.test(urls[0])))
     setEditingId(product.id)
   }
 
@@ -125,7 +126,9 @@ export function ProductsPanel() {
       let note: string | undefined
       for (const file of files) {
         const result = await compressImageFile(file)
-        added.push(result.dataUrl)
+        const ext = result.mimeType === 'image/webp' ? 'webp' : 'jpg'
+        const uploaded = await uploadAdminImage(result.blob, `product.${ext}`)
+        added.push(uploaded.url)
         if (result.note) note = result.note
       }
       setForm((prev) => {

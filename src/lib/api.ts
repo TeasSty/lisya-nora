@@ -263,6 +263,36 @@ export function deleteAdminProduct(id: number): Promise<{ ok: true }> {
   return request(`/api/admin/products/${id}`, { method: 'DELETE' })
 }
 
+/**
+ * Загрузка фото товара на диск (Host-0: uploads/products/).
+ * Не ставьте Content-Type вручную — boundary выставит браузер.
+ */
+export async function uploadAdminImage(
+  blob: Blob,
+  filename = 'photo.webp',
+): Promise<{ url: string }> {
+  const form = new FormData()
+  form.append('file', blob, filename)
+
+  const response = await fetch('/api/admin/upload-image', {
+    method: 'POST',
+    credentials: 'same-origin',
+    body: form,
+  })
+
+  const data = (await response.json().catch(() => null)) as
+    | { ok?: boolean; url?: string; error?: string }
+    | null
+
+  if (!response.ok) {
+    throw new ApiError(data?.error ?? 'Не удалось загрузить фото на сервер')
+  }
+  if (!data?.url || typeof data.url !== 'string') {
+    throw new ApiError('Сервер не вернул путь к фото')
+  }
+  return { url: data.url }
+}
+
 export function fetchAdminCategories(): Promise<{ categories: CategoryMeta[] }> {
   return request('/api/admin/categories')
 }

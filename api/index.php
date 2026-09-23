@@ -9,7 +9,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/helpers.php';
+require_once __DIR__ . '/lib/uploads.php';
 require_once __DIR__ . '/lib/ozon.php';
+
+ln_send_security_headers();
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
@@ -219,18 +222,29 @@ try {
         }
 
         if (!ln_secrets_configured()) {
-            ln_json(['error' => 'Админ не настроен: задайте admin_password и session_secret (от 16 символов) в config.php'], 500);
+            ln_json([
+                'error' => 'Админ не настроен: задайте admin_password_hash (php api/hash-password.php) и session_secret (от 16 символов) в config.php',
+            ], 500);
         }
 
         $body = ln_json_body();
         $password = isset($body['password']) && is_string($body['password']) ? $body['password'] : '';
-        if ($password === '' || !ln_timing_safe_equal($password, ln_admin_password())) {
+        if ($password === '' || !ln_verify_admin_password($password)) {
             ln_json(['error' => 'Неверный пароль'], 401);
         }
 
+        $migrated = ln_try_migrate_admin_password_hash($password);
+
         $cookie = ln_create_session_cookie(ln_session_secret(), ln_is_https());
         header('Set-Cookie: ' . $cookie);
-        ln_json(['ok' => true]);
+        $payload = ['ok' => true];
+        if ($migrated) {
+            $payload['passwordMigrated'] = true;
+        } elseif (!ln_is_password_hash(ln_admin_password_hash()) && ln_admin_password_legacy() !== '') {
+            // Legacy plaintext ещё в config, переписать не удалось — подсказка админу.
+            $payload['passwordMigrationNeeded'] = true;
+        }
+        ln_json($payload);
     }
 
     if ($method === 'POST' && $path === '/api/admin/logout') {
@@ -249,7 +263,8 @@ try {
     $needsAuth =
         str_starts_with($path, '/api/admin/orders')
         || str_starts_with($path, '/api/admin/products')
-        || str_starts_with($path, '/api/admin/categories');
+        || str_starts_with($path, '/api/admin/categories')
+        || $path === '/api/admin/upload-image';
 
     if ($needsAuth) {
         // Auth + CSRF (Origin/Referer) для всех методов, включая GET с cookie.
@@ -303,6 +318,19 @@ try {
         ln_json(['products' => array_map('ln_to_admin_product', $stmt->fetchAll())]);
     }
 
+    if ($method === 'POST' && $path === '/api/admin/upload-image') {
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            ln_json(['error' => 'Пришлите файл в поле file (multipart/form-data)'], 400);
+        }
+        /** @var array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int} $file */
+        $file = $_FILES['file'];
+        $stored = ln_store_uploaded_file($file);
+        if (is_array($stored)) {
+            ln_json(['error' => $stored['error']], 400);
+        }
+        ln_json(['ok' => true, 'url' => $stored]);
+    }
+
     if ($method === 'POST' && $path === '/api/admin/products') {
         $body = ln_json_body();
         $name = isset($body['name']) && is_string($body['name']) ? trim($body['name']) : '';
@@ -317,7 +345,12 @@ try {
         if (isset($imageUrlsResult['error'])) {
             ln_json(['error' => $imageUrlsResult['error']], 400);
         }
-        $imageUrls = $imageUrlsResult;
+        $materialized = ln_materialize_image_urls($imageUrlsResult);
+        if (isset($materialized['error']) && is_string($materialized['error'])) {
+            ln_json(['error' => $materialized['error']], 400);
+        }
+        /** @var list<string> $imageUrls */
+        $imageUrls = $materialized;
         $imageUrl = $imageUrls[0] ?? null;
         $imageUrlsJson = $imageUrls !== [] ? json_encode($imageUrls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
         $priceRub = ln_parse_price_rub($body['priceRub'] ?? null);
@@ -359,7 +392,12 @@ try {
         if (isset($imageUrlsResult['error'])) {
             ln_json(['error' => $imageUrlsResult['error']], 400);
         }
-        $imageUrls = $imageUrlsResult;
+        $materialized = ln_materialize_image_urls($imageUrlsResult);
+        if (isset($materialized['error']) && is_string($materialized['error'])) {
+            ln_json(['error' => $materialized['error']], 400);
+        }
+        /** @var list<string> $imageUrls */
+        $imageUrls = $materialized;
         $imageUrl = $imageUrls[0] ?? null;
         $imageUrlsJson = $imageUrls !== [] ? json_encode($imageUrls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
         $priceRub = ln_parse_price_rub($body['priceRub'] ?? null);

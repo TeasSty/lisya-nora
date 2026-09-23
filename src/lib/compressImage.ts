@@ -2,11 +2,11 @@ const MAX_INPUT_BYTES = 8 * 1024 * 1024
 const MAX_EDGE = 800
 const WEBP_QUALITY = 0.8
 const JPEG_QUALITY = 0.82
-/** ~450 КБ data URL — комфортно для localStorage / D1 TEXT без R2. */
-const MAX_DATA_URL_CHARS = 620_000
+/** ~600 КБ бинарно — лимит PHP uploads/products на Host-0. */
+const MAX_BLOB_BYTES = 600_000
 
 export type CompressImageResult = {
-  dataUrl: string
+  blob: Blob
   mimeType: 'image/webp' | 'image/jpeg'
   /** Мягкая подсказка, если браузер не умеет WebP encode */
   note?: string
@@ -38,47 +38,34 @@ function canvasToBlob(
   })
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result)
-      else reject(new Error('Не удалось сохранить изображение'))
-    }
-    reader.onerror = () => reject(new Error('Не удалось сохранить изображение'))
-    reader.readAsDataURL(blob)
-  })
-}
-
 /**
- * Кодирует canvas в data URL выбранного MIME с понижением quality при переполнении лимита.
+ * Кодирует canvas в Blob выбранного MIME с понижением quality при переполнении лимита.
  * Возвращает null, если браузер не умеет данный формат (например WebP encode).
  */
-async function encodeDataUrl(
+async function encodeBlob(
   canvas: HTMLCanvasElement,
   mimeType: 'image/webp' | 'image/jpeg',
   startQuality: number,
-): Promise<string | null> {
+): Promise<Blob | null> {
   let quality = startQuality
-  let lastDataUrl: string | null = null
+  let lastBlob: Blob | null = null
 
   while (quality >= 0.45) {
     const blob = await canvasToBlob(canvas, mimeType, quality)
     if (!blob || blob.type !== mimeType) return null
 
-    const dataUrl = await blobToDataUrl(blob)
-    lastDataUrl = dataUrl
-    if (dataUrl.length <= MAX_DATA_URL_CHARS) return dataUrl
+    lastBlob = blob
+    if (blob.size <= MAX_BLOB_BYTES) return blob
     quality -= 0.1
   }
 
-  return lastDataUrl
+  return lastBlob
 }
 
 /**
  * Сжимает фото на клиенте до ~800px по длинной стороне.
  * Предпочитает WebP (quality ~0.8); если браузер не умеет encode — JPEG.
- * Возвращает data URL, пригодный для хранения в imageUrl (SQLite/D1 TEXT).
+ * Возвращает Blob для multipart-загрузки на Host-0 (`/api/admin/upload-image`).
  */
 export async function compressImageFile(file: File): Promise<CompressImageResult> {
   if (!file.type.startsWith('image/')) {
@@ -103,18 +90,18 @@ export async function compressImageFile(file: File): Promise<CompressImageResult
   ctx.fillRect(0, 0, width, height)
   ctx.drawImage(img, 0, 0, width, height)
 
-  const webpDataUrl = await encodeDataUrl(canvas, 'image/webp', WEBP_QUALITY)
-  if (webpDataUrl && webpDataUrl.length <= MAX_DATA_URL_CHARS) {
-    return { dataUrl: webpDataUrl, mimeType: 'image/webp' }
+  const webpBlob = await encodeBlob(canvas, 'image/webp', WEBP_QUALITY)
+  if (webpBlob && webpBlob.size <= MAX_BLOB_BYTES) {
+    return { blob: webpBlob, mimeType: 'image/webp' }
   }
 
-  const jpegDataUrl = await encodeDataUrl(canvas, 'image/jpeg', JPEG_QUALITY)
-  if (jpegDataUrl && jpegDataUrl.length <= MAX_DATA_URL_CHARS) {
+  const jpegBlob = await encodeBlob(canvas, 'image/jpeg', JPEG_QUALITY)
+  if (jpegBlob && jpegBlob.size <= MAX_BLOB_BYTES) {
     return {
-      dataUrl: jpegDataUrl,
+      blob: jpegBlob,
       mimeType: 'image/jpeg',
       note:
-        webpDataUrl === null
+        webpBlob === null
           ? 'Браузер не умеет сохранять WebP — фото сжато в JPEG. В современных браузерах будет WebP.'
           : undefined,
     }

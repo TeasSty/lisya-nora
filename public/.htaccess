@@ -9,7 +9,7 @@
   # файлы (config.php, lib/*.php) отдаются напрямую из-за правила -f ниже.
   RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
 
-  # Не ломать реальные файлы и папки (статика Vite, images)
+  # Не ломать реальные файлы и папки (статика Vite, images, uploads)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
@@ -26,3 +26,14 @@ Options -Indexes
     Require all denied
   </IfModule>
 </FilesMatch>
+
+# Security headers для HTML/статики (API дублирует свои в PHP).
+# style-src 'unsafe-inline' — известный компромисс: React/Leaflet ставят inline style.
+# script-src без unsafe-inline: ранний scroll-restore вынесен в /early-scroll.js.
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+  Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://id.vk.com https://id.vk.ru https://api.vk.com https://login.vk.com https://*.vk.com https://*.vk.ru https://*.userapi.com; frame-src https://id.vk.com https://id.vk.ru https://login.vk.com https://*.vk.com https://*.vk.ru; worker-src 'self' blob:; media-src 'self'"
+</IfModule>

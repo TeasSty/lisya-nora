@@ -28,8 +28,10 @@
 ├── src/                 Фронтенд
 ├── api/                 PHP API для Host-0 (маршруты = worker/index.ts)
 │   ├── index.php
+│   ├── hash-password.php   CLI: bcrypt для admin_password_hash
 │   ├── config.example.php  → скопировать в config.php на сервере
-│   └── lib/             auth, helpers, ozon
+│   └── lib/             auth, helpers, uploads, ozon
+├── public/uploads/      Фото товаров на Host-0 (+ .htaccess без PHP)
 ├── mysql/schema.sql     Схема + стартовый каталог
 ├── public/.htaccess     SPA + /api → PHP (попадает в dist)
 ├── server/              Node + SQLite (VPS, опционально)
@@ -72,14 +74,27 @@ npm run build:host0
 На ПК (или сразу на сервере после заливки):
 
 1. Скопируйте `api/config.example.php` → `api/config.php`.
-2. Заполните:
+2. Сгенерируйте hash пароля админа:
+
+```bash
+php api/hash-password.php 'ваш-секретный-пароль'
+```
+
+3. Заполните:
 
 | Ключ | Откуда |
 |------|--------|
 | `db_host` / `db_name` / `db_user` / `db_pass` | панель MySQL |
-| `admin_password` | пароль входа на `/admin` |
-| `session_secret` | длинная случайная строка |
+| `admin_password_hash` | вывод `hash-password.php` |
+| `session_secret` | длинная случайная строка (≥ 16 символов) |
 | `ozon_delivery_*` | опционально (см. раздел Ozon) |
+| `trust_proxy` | `false` на обычном Host-0 |
+
+**Миграция со старого plaintext:** если в `config.php` ещё есть `admin_password`,
+вход продолжит работать. При первом успешном логине PHP попытается сам заменить
+его на `admin_password_hash` (если `config.php` доступен на запись). Иначе
+сгенерируйте hash вручную, вставьте `admin_password_hash` и **удалите**
+`admin_password`.
 
 `config.php` **не коммитьте** и не светите в чатах.
 
@@ -87,11 +102,12 @@ npm run build:host0
 
 1. Панель → **FTP** (логин/пароль/хост) → FileZilla или встроенный файловый менеджер.
 2. Залейте **всё содержимое** `dist/host0` в `public_html`
-   (рядом должны лежать `index.html`, `assets/`, `api/`, `.htaccess`, `images/`).
+   (рядом: `index.html`, `assets/`, `api/`, `uploads/`, `.htaccess`, `images/`).
 3. Убедитесь, что на сервере есть `api/config.php` (если собирали без него —
    залейте отдельно).
-4. Права на `api/cache/` — запись для PHP (обычно 755/775; если кэш Ozon
-   не пишется — поставьте 775 или уточните у поддержки).
+4. Права на запись:
+   - `api/cache/` — кэш Ozon / rate limit (обычно 755/775);
+   - `uploads/products/` — фото товаров из админки (обычно 755/775).
 
 ### 6. SSL (HTTPS)
 
@@ -104,15 +120,16 @@ npm run build:host0
 
 1. `https://ваш-домен.ru` — открывается сайт.
 2. `https://ваш-домен.ru/api/products` — JSON с товарами.
-3. `https://ваш-домен.ru/admin` — вход паролем из `admin_password`.
-4. Тестовая заявка с витрины → видна во вкладке заявок админки.
+3. `https://ваш-домен.ru/admin` — вход паролем (hash в `admin_password_hash`).
+4. В админке загрузите фото товара → файл появляется в `/uploads/products/…`.
+5. Тестовая заявка с витрины → видна во вкладке заявок админки.
 
 ### Обновление сайта позже
 
 ```bash
 npm run build:host0
 # залить dist/host0 поверх public_html
-# config.php на сервере не затирайте (его нет в сборке)
+# config.php и uploads/products/*.jpg|webp на сервере не затирайте
 ```
 
 ---
