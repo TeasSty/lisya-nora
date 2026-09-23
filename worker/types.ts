@@ -57,4 +57,9 @@ export interface OrderRow {
   comment: string
   status: 'new' | 'done'
   created_at: string
+  vk_user_id: string | null
+  vk_first_name: string | null
+  vk_last_name: string | null
+  vk_avatar_url: string | null
+  vk_profile_url: string | null
 }

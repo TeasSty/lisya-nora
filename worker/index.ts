@@ -239,6 +239,56 @@ function toAdminOrder(row: OrderRow) {
     comment: row.comment,
     status: row.status,
     createdAt: row.created_at,
+    vkUserId: row.vk_user_id,
+    vkFirstName: row.vk_first_name,
+    vkLastName: row.vk_last_name,
+    vkAvatarUrl: row.vk_avatar_url,
+    vkProfileUrl: row.vk_profile_url,
+  }
+}
+
+function normalizeOptionalText(value: unknown, maxLen: number): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return trimmed.slice(0, maxLen)
+}
+
+/** Клиентский профиль VK — не доверяем полностью, только обрезаем и проверяем форму. */
+function parseVkProfile(body: Record<string, unknown>): {
+  vkUserId: string | null
+  vkFirstName: string | null
+  vkLastName: string | null
+  vkAvatarUrl: string | null
+  vkProfileUrl: string | null
+} {
+  const vkUserId = normalizeOptionalText(body.vkUserId, 64)
+  if (!vkUserId || !/^\d{1,20}$/.test(vkUserId)) {
+    return {
+      vkUserId: null,
+      vkFirstName: null,
+      vkLastName: null,
+      vkAvatarUrl: null,
+      vkProfileUrl: null,
+    }
+  }
+
+  let vkAvatarUrl = normalizeOptionalText(body.vkAvatarUrl, 1000)
+  if (vkAvatarUrl && !/^https:\/\//i.test(vkAvatarUrl)) vkAvatarUrl = null
+
+  let vkProfileUrl = normalizeOptionalText(body.vkProfileUrl, 300)
+  if (vkProfileUrl && !/^https:\/\/(m\.)?vk\.(com|ru)\//i.test(vkProfileUrl)) {
+    vkProfileUrl = `https://vk.com/id${vkUserId}`
+  } else if (!vkProfileUrl) {
+    vkProfileUrl = `https://vk.com/id${vkUserId}`
+  }
+
+  return {
+    vkUserId,
+    vkFirstName: normalizeOptionalText(body.vkFirstName, 120),
+    vkLastName: normalizeOptionalText(body.vkLastName, 120),
+    vkAvatarUrl,
+    vkProfileUrl,
   }
 }
 
@@ -459,6 +509,11 @@ app.post('/api/orders', async (c) => {
       productName?: unknown
       items?: unknown
       comment?: unknown
+      vkUserId?: unknown
+      vkFirstName?: unknown
+      vkLastName?: unknown
+      vkAvatarUrl?: unknown
+      vkProfileUrl?: unknown
     }>()
 
     const name = typeof body.name === 'string' ? body.name.trim() : ''
@@ -470,6 +525,7 @@ app.post('/api/orders', async (c) => {
       typeof body.contactChannel === 'string' ? body.contactChannel.trim().toLowerCase() : ''
     const contactHandle = typeof body.contactHandle === 'string' ? body.contactHandle.trim() : ''
     const comment = typeof body.comment === 'string' ? body.comment.trim() : ''
+    const vk = parseVkProfile(body as Record<string, unknown>)
 
     let refs = parseOrderItemRefs(body.items)
     if (refs.length === 0) {
@@ -528,7 +584,12 @@ app.post('/api/orders', async (c) => {
     const itemsJson = JSON.stringify(items)
 
     await c.env.DB.prepare(
-      'INSERT INTO orders (customer_name, phone, city, address, pickup_point, contact_channel, contact_handle, product_id, product_name, items_json, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO orders (
+        customer_name, phone, city, address, pickup_point,
+        contact_channel, contact_handle,
+        product_id, product_name, items_json, comment, status,
+        vk_user_id, vk_first_name, vk_last_name, vk_avatar_url, vk_profile_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         name,
@@ -543,6 +604,11 @@ app.post('/api/orders', async (c) => {
         itemsJson,
         comment,
         'new',
+        vk.vkUserId,
+        vk.vkFirstName,
+        vk.vkLastName,
+        vk.vkAvatarUrl,
+        vk.vkProfileUrl,
       )
       .run()
 
@@ -609,7 +675,7 @@ app.use('/api/admin/categories', requireAuth)
 app.get('/api/admin/orders', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, customer_name, phone, city, address, pickup_point, tracking_number, contact_channel, contact_handle, product_id, product_name, items_json, comment, status, created_at FROM orders ORDER BY created_at DESC, id DESC',
+      'SELECT id, customer_name, phone, city, address, pickup_point, tracking_number, contact_channel, contact_handle, product_id, product_name, items_json, comment, status, created_at, vk_user_id, vk_first_name, vk_last_name, vk_avatar_url, vk_profile_url FROM orders ORDER BY created_at DESC, id DESC',
     ).all<OrderRow>()
     return c.json({ orders: results.map(toAdminOrder) })
   } catch (error) {

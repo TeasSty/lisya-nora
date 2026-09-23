@@ -64,4 +64,10 @@ export interface AdminOrder {
   comment: string
   status: 'new' | 'done'
   createdAt: string
+  /** Профиль VK ID, если покупатель вошёл перед отправкой заявки. */
+  vkUserId?: string | null
+  vkFirstName?: string | null
+  vkLastName?: string | null
+  vkAvatarUrl?: string | null
+  vkProfileUrl?: string | null
 }

@@ -9,6 +9,7 @@ import { formatContactChannel } from '../../lib/contactChannel'
 import { normalizeAdminOrder, formatOrderItemLine } from '../../lib/orderItems'
 import { buildOzonShipmentDocument, buildTrackingMessage, getOzonCopyFields } from '../../lib/ozonShipment'
 import type { AdminOrder } from '../../lib/types'
+import { displayVkName, vkProfileUrl } from '../../lib/vkSession'
 
 function formatDate(iso: string): string {
   try {
@@ -50,6 +51,38 @@ async function copyText(text: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+function OrderVkCard({ order }: { order: AdminOrder }) {
+  const vkUserId = order.vkUserId?.trim()
+  if (!vkUserId) return null
+
+  const name =
+    displayVkName({
+      firstName: order.vkFirstName ?? '',
+      lastName: order.vkLastName ?? '',
+    }) || `id${vkUserId}`
+  const profileUrl = order.vkProfileUrl?.trim() || vkProfileUrl(vkUserId)
+  const avatarUrl = order.vkAvatarUrl?.trim() || ''
+
+  return (
+    <div className="order-row__vk">
+      {avatarUrl ? (
+        <img className="order-row__vk-avatar" src={avatarUrl} alt="" width={40} height={40} />
+      ) : (
+        <span className="order-row__vk-avatar order-row__vk-avatar--placeholder" aria-hidden="true">
+          VK
+        </span>
+      )}
+      <div className="order-row__vk-text">
+        <span className="order-row__vk-label">ВКонтакте</span>
+        <strong>{name}</strong>
+        <a href={profileUrl} target="_blank" rel="noreferrer">
+          Открыть профиль
+        </a>
+      </div>
+    </div>
+  )
 }
 
 export function OrdersPanel() {
@@ -256,6 +289,8 @@ export function OrdersPanel() {
                   <a href={`tel:${order.phone.replace(/\s+/g, '')}`}>{order.phone}</a> ·{' '}
                   {formatDate(order.createdAt)}
                 </span>
+
+                <OrderVkCard order={order} />
 
                 <div className="order-row__ship">
                   <dl className="order-row__ship-list">

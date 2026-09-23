@@ -14,7 +14,7 @@ export function Location() {
       <div className="container">
         <div className="section__head reveal" ref={ref}>
           <span className="eyebrow">Как нас найти</span>
-          <h2>Старый город, рядом с Серым монахом</h2>
+          <h2>Волшебство на вытянутой руки</h2>
           <p>Заходите без записи — просто по расписанию магазина.</p>
         </div>
 

@@ -272,6 +272,19 @@ export interface OrderPayload {
   /** Legacy-поля для совместимости со старым API. */
   productId?: number | null
   productName?: string
+  /** Опциональный профиль VK ID (гость без входа — поля не передаём). */
+  vkUserId?: string
+  vkFirstName?: string
+  vkLastName?: string
+  vkAvatarUrl?: string
+  vkProfileUrl?: string
+}
+
+function normalizeOptionalText(value: unknown, maxLen: number): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return trimmed.slice(0, maxLen)
 }
 
 function normalizeOrderPayload(payload: OrderPayload): {
@@ -286,6 +299,11 @@ function normalizeOrderPayload(payload: OrderPayload): {
   items: OrderItem[]
   productId: number | null
   productName: string
+  vkUserId: string | null
+  vkFirstName: string | null
+  vkLastName: string | null
+  vkAvatarUrl: string | null
+  vkProfileUrl: string | null
 } {
   const items =
     payload.items?.length > 0
@@ -310,6 +328,12 @@ function normalizeOrderPayload(payload: OrderPayload): {
   const productName = summarizeProductNames(validItems)
   const productId = validItems.length === 1 ? validItems[0].productId : null
 
+  const vkUserId = normalizeOptionalText(payload.vkUserId, 64)
+  const vkFirstName = vkUserId ? normalizeOptionalText(payload.vkFirstName, 120) : null
+  const vkLastName = vkUserId ? normalizeOptionalText(payload.vkLastName, 120) : null
+  const vkAvatarUrl = vkUserId ? normalizeOptionalText(payload.vkAvatarUrl, 1000) : null
+  const vkProfileUrl = vkUserId ? normalizeOptionalText(payload.vkProfileUrl, 300) : null
+
   return {
     name: payload.name,
     phone: payload.phone,
@@ -322,6 +346,11 @@ function normalizeOrderPayload(payload: OrderPayload): {
     items: validItems,
     productId,
     productName,
+    vkUserId,
+    vkFirstName,
+    vkLastName,
+    vkAvatarUrl,
+    vkProfileUrl,
   }
 }
 
@@ -418,6 +447,11 @@ export function submitOrder(payload: OrderPayload): Promise<{ ok: true }> {
       comment: normalized.comment,
       status: 'new',
       createdAt: new Date().toISOString(),
+      vkUserId: normalized.vkUserId,
+      vkFirstName: normalized.vkFirstName,
+      vkLastName: normalized.vkLastName,
+      vkAvatarUrl: normalized.vkAvatarUrl,
+      vkProfileUrl: normalized.vkProfileUrl,
     }
     writeDemoOrders([next, ...orders])
     return demoDelay({ ok: true as const }, 700)

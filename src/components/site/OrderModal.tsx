@@ -16,6 +16,8 @@ import { formatOrderItemLine, productsToOrderItems } from '../../lib/orderItems'
 import { isCompleteAddress, isCompletePickupPoint } from '../../lib/ozonShipment'
 import type { Product } from '../../lib/types'
 import { AddressSuggestInput } from './AddressSuggestInput'
+import { VkLoginBlock } from './VkLoginBlock'
+import { readVkFieldsForOrder } from '../../lib/vkSession'
 
 export interface CheckoutProduct extends Product {
   quantity?: number
@@ -214,6 +216,7 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
         contactHandle: showContactHandle ? contactHandle.trim() : '',
         comment: comment.trim(),
         items: productsToOrderItems(products),
+        ...readVkFieldsForOrder(),
       })
       setStatus('done')
       onSuccess?.()
@@ -383,6 +386,13 @@ export function OrderModal({ products, onClose, onSuccess }: OrderModalProps) {
             </div>
 
             <form onSubmit={handleSubmit} noValidate>
+              <VkLoginBlock
+                onPrefillName={(vkName) => {
+                  setName((prev) => (prev.trim() ? prev : vkName))
+                  clearErrorIfValid('name', isValidName(vkName))
+                }}
+              />
+
               <div className="form-field">
                 <label htmlFor="order-name">Ваше имя</label>
                 <input
