@@ -113,6 +113,15 @@ function ln_is_https(): bool
     if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
         return true;
     }
+    // Не подделывается клиентом (в отличие от X-Forwarded-*).
+    $scheme = strtolower((string) ($_SERVER['REQUEST_SCHEME'] ?? ''));
+    if ($scheme === 'https') {
+        return true;
+    }
+    $port = (string) ($_SERVER['SERVER_PORT'] ?? '');
+    if ($port === '443') {
+        return true;
+    }
     // X-Forwarded-Proto только если явно разрешено в config (иначе клиент может подделать).
     $trustProxy = !empty(ln_config()['trust_proxy'] ?? false);
     if ($trustProxy) {

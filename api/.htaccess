@@ -8,6 +8,7 @@ DirectoryIndex index.php
   # Закрыть прямой доступ к конфигу, кэшу и библиотекам
   RewriteRule ^config\.php$ - [F,L]
   RewriteRule ^config\.example\.php$ - [F,L]
+  RewriteRule ^hash-password\.php$ - [F,L]
   RewriteRule ^cache/ - [F,L]
   RewriteRule ^lib/ - [F,L]
   RewriteRule ^bootstrap\.php$ - [F,L]

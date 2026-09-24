@@ -27,6 +27,14 @@ Options -Indexes
   </IfModule>
 </FilesMatch>
 
+# Defense-in-depth: PHP вне front controller не отдаём напрямую
+# (основной маршрут /api/* → api/index.php выше).
+<FilesMatch "^(config|bootstrap|hash-password)\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
+
 # Security headers для HTML/статики (API дублирует свои в PHP).
 # style-src 'unsafe-inline' — известный компромисс: React/Leaflet ставят inline style.
 # script-src без unsafe-inline: ранний scroll-restore вынесен в /early-scroll.js.
