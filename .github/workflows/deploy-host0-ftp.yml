@@ -1,0 +1,43 @@
+# One-shot Host-0 deploy to reg.ru (FTP). Never overwrites api/config.php or uploads/.
+name: Deploy Host0 FTP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build Host-0 package
+        run: npm run build:host0
+
+      - name: Remove protected remote-only paths from upload set
+        run: |
+          rm -f dist/host0/api/config.php
+          rm -rf dist/host0/uploads
+
+      - name: FTP upload to reg.ru
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: ./dist/host0/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}/
+          protocol: ftp
+          dangerous-clean-slate: false
+          exclude: |
+            **/api/config.php
+            **/uploads/**
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
