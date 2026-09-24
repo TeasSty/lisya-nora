@@ -1,10 +1,9 @@
 /**
- * One-shot host0 deploy. Reads .env.deploy. Never overwrites api/config.php; skips uploads/.
+ * One-shot host0 deploy. Reads .env.deploy (or process.env). Never overwrites api/config.php; skips uploads/.
  */
-import { readFileSync, createReadStream, statSync, readdirSync } from 'node:fs'
-import { join, relative, posix } from 'node:path'
+import { readFileSync, existsSync, createReadStream, statSync, readdirSync } from 'node:fs'
+import { join, relative, posix, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = join(root, '.env.deploy')
@@ -12,6 +11,7 @@ const localRoot = join(root, 'dist', 'host0')
 
 function loadEnv(path) {
   const out = {}
+  if (!existsSync(path)) return out
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
     const t = line.trim()
     if (!t || t.startsWith('#')) continue
@@ -20,6 +20,10 @@ function loadEnv(path) {
     out[t.slice(0, i).trim()] = t.slice(i + 1).trim()
   }
   return out
+}
+
+function envGet(fileEnv, key) {
+  return process.env[key] || fileEnv[key] || ''
 }
 
 function walk(dir, base = dir, files = []) {
@@ -64,7 +68,6 @@ async function trySftp(host, user, pass, remoteCandidates) {
     }
   }
   if (!remoteRoot) {
-    // list home to discover
     try {
       const home = await sftp.list('.')
       console.log('[sftp] cwd listing:', home.map((x) => x.name).join(', '))
@@ -92,45 +95,45 @@ async function trySftp(host, user, pass, remoteCandidates) {
     console.log(`[sftp] put ${rel}`)
   }
 
-  // Extra: if remote has uploads/, leave alone (already skipped)
   await sftp.end()
-  return { protocol: 'sftp', host, remoteRoot, uploaded, skipped }
+  return { protocol: 'sftp', host, user, remoteRoot, uploaded, skipped }
 }
 
-async function tryFtp(host, user, pass, remoteCandidates) {
+async function tryFtp(host, user, pass, remoteCandidates, secureMode = false) {
   const ftp = await import('basic-ftp')
-  const client = new ftp.Client(20000)
+  const client = new ftp.Client(25000)
   client.ftp.verbose = false
-  console.log(`[ftp] connecting ${user}@${host}:21 ...`)
+  const label = secureMode ? 'ftps' : 'ftp'
+  console.log(`[${label}] connecting ${user}@${host}:21 (secure=${secureMode}) ...`)
   await client.access({
     host,
     user,
     password: pass,
-    secure: false,
+    secure: secureMode,
+    secureOptions: secureMode ? { rejectUnauthorized: false } : undefined,
   })
-  console.log('[ftp] connected')
+  console.log(`[${label}] connected`)
 
   let remoteRoot = null
   for (const cand of remoteCandidates) {
     try {
       await client.cd(cand)
       remoteRoot = cand.replace(/\/$/, '')
-      console.log(`[ftp] cd ok: ${cand}`)
+      console.log(`[${label}] cd ok: ${cand}`)
       break
     } catch (e) {
-      console.log(`[ftp] cd fail ${cand}: ${e.message}`)
+      console.log(`[${label}] cd fail ${cand}: ${e.message}`)
     }
   }
   if (!remoteRoot) {
     try {
       const list = await client.list()
-      console.log('[ftp] cwd listing:', list.map((x) => x.name).join(', '))
+      console.log(`[${label}] cwd listing:`, list.map((x) => x.name).join(', '))
     } catch {}
     client.close()
     throw new Error('remote dir not found among candidates')
   }
 
-  // Ensure we are at remote root for relative uploads
   await client.cd(remoteRoot)
 
   const files = walk(localRoot)
@@ -144,10 +147,8 @@ async function tryFtp(host, user, pass, remoteCandidates) {
       continue
     }
     const remote = posix.join(remoteRoot, rel)
-    const remoteDir = posix.dirname(remote)
-    await client.ensureDir(remoteDir)
-    await client.cd(remoteRoot) // ensureDir may leave us elsewhere
-    // basic-ftp uploadFrom needs to reopen path — use absolute from root via cd
+    await client.ensureDir(posix.dirname(remote))
+    await client.cd(remoteRoot)
     const parts = rel.split('/')
     if (parts.length > 1) {
       await client.ensureDir(posix.join(remoteRoot, ...parts.slice(0, -1)))
@@ -155,20 +156,43 @@ async function tryFtp(host, user, pass, remoteCandidates) {
     }
     await client.uploadFrom(createReadStream(abs), remote)
     uploaded.push(rel)
-    console.log(`[ftp] put ${rel}`)
+    console.log(`[${label}] put ${rel}`)
   }
 
   client.close()
-  return { protocol: 'ftp', host, remoteRoot, uploaded, skipped }
+  return { protocol: label, host, user, remoteRoot, uploaded, skipped }
 }
 
 async function main() {
-  const env = loadEnv(envPath)
-  const user = env.FTP_USER
-  const pass = env.FTP_PASS
-  const hosts = [...new Set([env.FTP_HOST, env.FTP_ALT_HOST, '37.140.192.106'].filter(Boolean))]
+  const fileEnv = loadEnv(envPath)
+  const userBase = envGet(fileEnv, 'FTP_USER')
+  const pass = envGet(fileEnv, 'FTP_PASS')
+  const prefer = (envGet(fileEnv, 'FTP_PROTOCOL') || 'ftp').toLowerCase()
+
+  const hosts = [
+    ...new Set(
+      [
+        envGet(fileEnv, 'FTP_HOST'),
+        '37.140.192.106',
+        envGet(fileEnv, 'FTP_ALT_HOST'),
+        'server64.hosting.reg.ru',
+        'ftp.lisanoravbg.ru',
+      ].filter(Boolean),
+    ),
+  ]
+
+  const users = [
+    ...new Set(
+      [
+        userBase,
+        userBase && !userBase.includes('@') ? `${userBase}@server64.hosting.reg.ru` : null,
+        userBase && !userBase.includes('@') ? `${userBase}@ftp.lisanoravbg.ru` : null,
+      ].filter(Boolean),
+    ),
+  ]
+
   const remoteCandidates = [
-    env.FTP_REMOTE_DIR,
+    envGet(fileEnv, 'FTP_REMOTE_DIR'),
     '/www/lisanoravbg.ru',
     'www/lisanoravbg.ru',
     '/home/u3633327/www/lisanoravbg.ru',
@@ -180,23 +204,51 @@ async function main() {
     throw new Error(`missing ${localRoot}`)
   }
 
+  if (!userBase || !pass) {
+    throw new Error('FTP_USER / FTP_PASS missing')
+  }
+
+  console.log(`[deploy] hosts=${hosts.join(',')} users=${users.join(',')} prefer=${prefer}`)
+
   const errors = []
   for (const host of hosts) {
-    try {
-      const result = await trySftp(host, user, pass, remoteCandidates)
-      console.log(JSON.stringify({ ok: true, ...result, uploadedCount: result.uploaded.length, skippedCount: result.skipped.length }, null, 2))
-      return
-    } catch (e) {
-      console.error(`[sftp] ${host} failed:`, e.message)
-      errors.push(`sftp ${host}: ${e.message}`)
-    }
-    try {
-      const result = await tryFtp(host, user, pass, remoteCandidates)
-      console.log(JSON.stringify({ ok: true, ...result, uploadedCount: result.uploaded.length, skippedCount: result.skipped.length }, null, 2))
-      return
-    } catch (e) {
-      console.error(`[ftp] ${host} failed:`, e.message)
-      errors.push(`ftp ${host}: ${e.message}`)
+    for (const user of users) {
+      const attempts = []
+      if (prefer === 'sftp') {
+        attempts.push(['sftp', () => trySftp(host, user, pass, remoteCandidates)])
+        attempts.push(['ftp', () => tryFtp(host, user, pass, remoteCandidates, false)])
+        attempts.push(['ftps', () => tryFtp(host, user, pass, remoteCandidates, true)])
+      } else if (prefer === 'ftps') {
+        attempts.push(['ftps', () => tryFtp(host, user, pass, remoteCandidates, true)])
+        attempts.push(['ftp', () => tryFtp(host, user, pass, remoteCandidates, false)])
+        attempts.push(['sftp', () => trySftp(host, user, pass, remoteCandidates)])
+      } else {
+        attempts.push(['ftp', () => tryFtp(host, user, pass, remoteCandidates, false)])
+        attempts.push(['ftps', () => tryFtp(host, user, pass, remoteCandidates, true)])
+        attempts.push(['sftp', () => trySftp(host, user, pass, remoteCandidates)])
+      }
+
+      for (const [name, run] of attempts) {
+        try {
+          const result = await run()
+          console.log(
+            JSON.stringify(
+              {
+                ok: true,
+                ...result,
+                uploadedCount: result.uploaded.length,
+                skippedCount: result.skipped.length,
+              },
+              null,
+              2,
+            ),
+          )
+          return
+        } catch (e) {
+          console.error(`[${name}] ${user}@${host} failed:`, e.message)
+          errors.push(`${name} ${user}@${host}: ${e.message}`)
+        }
+      }
     }
   }
   console.error(JSON.stringify({ ok: false, errors }, null, 2))
