@@ -23,6 +23,10 @@ Options -Indexes
   </IfModule>
 </FilesMatch>
 
+<IfModule mod_mime.c>
+  AddType application/xml .xml
+</IfModule>
+
 # Security headers — см. комментарии в public/.htaccess
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"

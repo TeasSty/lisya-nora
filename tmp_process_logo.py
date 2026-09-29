@@ -227,13 +227,14 @@ def fit_square(im: Image.Image, size: int) -> Image.Image:
 
 
 def save_favicon_ico(im: Image.Image, path: Path) -> None:
+    # Largest first: Pillow otherwise often embeds only the lead frame (was 16×16-only).
     sizes = [16, 32, 48]
     imgs = [fit_square(im, s) for s in sizes]
-    imgs[0].save(
+    imgs[-1].save(
         path,
         format="ICO",
         sizes=[(s, s) for s in sizes],
-        append_images=imgs[1:],
+        append_images=imgs[:-1],
     )
 
 
@@ -267,6 +268,9 @@ def main() -> None:
         IMAGES / "logo-mark-dark.webp", "WEBP", quality=92, method=6
     )
     fit_square(final, 32).save(PUBLIC / "favicon-32.png", "PNG", optimize=True)
+    fit_square(final, 48).save(PUBLIC / "favicon-48.png", "PNG", optimize=True)
+    fit_square(final, 120).save(PUBLIC / "favicon-120.png", "PNG", optimize=True)
+    fit_square(final, 192).save(PUBLIC / "favicon-192.png", "PNG", optimize=True)
     fit_square(final, 180).save(PUBLIC / "apple-touch-icon.png", "PNG", optimize=True)
     save_favicon_ico(final, PUBLIC / "favicon.ico")
 

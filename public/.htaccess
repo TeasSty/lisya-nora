@@ -35,6 +35,11 @@ Options -Indexes
   </IfModule>
 </FilesMatch>
 
+# Sitemap: явный MIME (не SPA HTML). text/xml тоже ок, но Яндекс предпочитает XML.
+<IfModule mod_mime.c>
+  AddType application/xml .xml
+</IfModule>
+
 # Security headers для HTML/статики (API дублирует свои в PHP).
 # style-src 'unsafe-inline' — известный компромисс: React/Leaflet ставят inline style.
 # script-src без unsafe-inline: ранний scroll-restore вынесен в /early-scroll.js.
