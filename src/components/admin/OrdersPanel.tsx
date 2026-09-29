@@ -305,9 +305,7 @@ export function OrdersPanel() {
                   </span>
                 </div>
 
-                {items.length === 1 ? (
-                  <span className="order-row__product">{formatOrderItemLine(items[0])}</span>
-                ) : (
+                {items.length > 0 && (
                   <ul className="order-row__items">
                     {items.map((item, index) => (
                       <li key={`${order.id}-${index}-${item.productName}`}>
