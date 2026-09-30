@@ -1019,6 +1019,10 @@
   color: var(--color-paper);
 }
 
+.catalog__results {
+  scroll-margin-top: calc(var(--header-offset, 82px) + 12px + env(safe-area-inset-top, 0px));
+}
+
 .catalog__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

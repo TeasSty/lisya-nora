@@ -51,6 +51,7 @@ export function BurrowMap({ selected, onSelect, categories = DEFAULT_CATEGORIES 
               className={`room-btn ${selected === room.id ? 'is-active' : ''}`}
               onClick={() => onSelect(room.id)}
               aria-pressed={selected === room.id}
+              aria-controls="catalog"
             >
               <span className="room-btn__icon">
                 <RoomIcon id={room.id} active={selected === room.id} />
@@ -97,6 +98,7 @@ export function BurrowMap({ selected, onSelect, categories = DEFAULT_CATEGORIES 
                 style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                 onClick={() => onSelect(room.id)}
                 aria-pressed={selected === room.id}
+                aria-controls="catalog"
               >
                 <RoomIcon id={room.id} active={selected === room.id} />
                 <strong>{room.title}</strong>

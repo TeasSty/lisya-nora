@@ -76,25 +76,27 @@ export function Catalog({
         </label>
       </div>
 
-      {isLoading && <p className="catalog__empty">Заглядываем на полки…</p>}
+      <div id="catalog" className="catalog__results">
+        {isLoading && <p className="catalog__empty">Заглядываем на полки…</p>}
 
-      {!isLoading && loadError && <p className="catalog__empty">{loadError}</p>}
+        {!isLoading && loadError && <p className="catalog__empty">{loadError}</p>}
 
-      {!isLoading && !loadError && filtered.length === 0 && (
-        <p className="catalog__empty">
-          {query.trim()
-            ? 'Ничего не нашлось — попробуйте другое слово или посмотрите другую комнату.'
-            : 'В этой комнате пока пусто — заходите позже, полки уже наполняются.'}
-        </p>
-      )}
+        {!isLoading && !loadError && filtered.length === 0 && (
+          <p className="catalog__empty">
+            {query.trim()
+              ? 'Ничего не нашлось — попробуйте другое слово или посмотрите другую комнату.'
+              : 'В этой комнате пока пусто — заходите позже, полки уже наполняются.'}
+          </p>
+        )}
 
-      {!isLoading && !loadError && filtered.length > 0 && (
-        <div className="catalog__grid">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} categories={categories} />
-          ))}
-        </div>
-      )}
+        {!isLoading && !loadError && filtered.length > 0 && (
+          <div className="catalog__grid">
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={product} categories={categories} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

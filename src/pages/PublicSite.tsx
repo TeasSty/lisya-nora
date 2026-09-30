@@ -62,6 +62,16 @@ function PublicSiteInner() {
     quantity: item.quantity,
   }))
 
+  const selectRoom = (room: RoomId) => {
+    setSelectedRoom(room)
+    const behavior: ScrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth'
+    requestAnimationFrame(() => {
+      document.getElementById('catalog')?.scrollIntoView({ behavior, block: 'start' })
+    })
+  }
+
   return (
     <>
       <a href="#main" className="skip-link">
@@ -82,7 +92,7 @@ function PublicSiteInner() {
               </p>
             </div>
 
-            <BurrowMap selected={selectedRoom} onSelect={setSelectedRoom} categories={categories} />
+            <BurrowMap selected={selectedRoom} onSelect={selectRoom} categories={categories} />
 
             <div style={{ marginTop: 40 }}>
               <Catalog
