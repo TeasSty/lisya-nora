@@ -43,6 +43,8 @@ Options -Indexes
 # Security headers для HTML/статики (API дублирует свои в PHP).
 # style-src 'unsafe-inline' — известный компромисс: React/Leaflet ставят inline style.
 # script-src без unsafe-inline: ранний scroll-restore вынесен в /early-scroll.js.
+# Метрика: inline-сниппет разрешён только по sha256 (не unsafe-inline), tag.js — с mc.yandex.ru.
+# img-src https: уже покрывает пиксель; хост указан явно. Webvisor шлёт данные по wss.
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
@@ -50,7 +52,7 @@ Options -Indexes
   Header set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
   # connect-src: Nominatim для подсказок адреса; OSM tiles грузятся как img (img-src https:).
   # Google Fonts остаются — без них витрина не ломается (системный fallback).
-  Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://nominatim.openstreetmap.org https://id.vk.com https://id.vk.ru https://api.vk.com https://login.vk.com https://*.vk.com https://*.vk.ru https://*.userapi.com; frame-src https://id.vk.com https://id.vk.ru https://login.vk.com https://*.vk.com https://*.vk.ru; worker-src 'self' blob:; media-src 'self'"
+  Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' https://mc.yandex.ru https://yastatic.net 'sha256-7c/9umAOYjNV/7mK57Cm7w7pvigVsBV4BCYyCz/qiks='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://mc.yandex.ru; connect-src 'self' https://mc.yandex.ru wss://mc.yandex.ru https://nominatim.openstreetmap.org https://id.vk.com https://id.vk.ru https://api.vk.com https://login.vk.com https://*.vk.com https://*.vk.ru https://*.userapi.com; frame-src https://mc.yandex.ru https://id.vk.com https://id.vk.ru https://login.vk.com https://*.vk.com https://*.vk.ru; worker-src 'self' blob:; media-src 'self'"
 
   # early-scroll.js must not inherit Host-0's multi-week static Expires —
   # otherwise F5 restore fixes never reach browsers after upload.
